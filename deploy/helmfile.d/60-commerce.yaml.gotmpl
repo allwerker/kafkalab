@@ -16,7 +16,7 @@ releases:
         replicas: {{ $.Values.services.replicas }}
         image:
           registry: {{ $.Values.registry }}
-          tag: {{ get $tags $svc | quote }}
+          tag: {{ index $tags $svc | quote }}
       - ../values/services/{{ $svc }}.yaml
     missingFileHandler: Info
 {{- end }}

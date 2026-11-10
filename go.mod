@@ -4,6 +4,7 @@ go 1.27
 
 require (
 	github.com/VictoriaMetrics/metrics v1.45.0
+	github.com/google/uuid v1.6.0
 	github.com/hamba/avro/v2 v2.31.0
 	github.com/jackc/pgx/v5 v5.12.0
 	github.com/twmb/franz-go v1.22.3
@@ -25,7 +26,6 @@ require (
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect

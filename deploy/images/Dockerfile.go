@@ -3,6 +3,6 @@
 FROM gcr.io/distroless/static-debian13:nonroot
 ARG BIN
 COPY ${BIN} /app
-USER nonroot:nonroot
+USER 65532:65532
 EXPOSE 8080
 ENTRYPOINT ["/app"]
