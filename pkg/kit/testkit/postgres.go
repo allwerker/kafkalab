@@ -80,7 +80,11 @@ func adminDSN() (string, error) {
 			"--tmpfs", "/var/lib/postgresql", PGImage,
 			"-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off", "-c", "max_connections=300")
 		if out, err := cmd.CombinedOutput(); err != nil {
-			return "", fmt.Errorf("docker run %s: %v: %s", PGImage, err, out)
+			// Test packages run in parallel processes: another one may have started the shared
+			// container a moment earlier ("name already in use"). Then just wait for it below.
+			if !strings.Contains(string(out), "already in use") {
+				return "", fmt.Errorf("docker run %s: %v: %s", PGImage, err, out)
+			}
 		}
 	}
 	if err := ping(dsn, 60*time.Second); err != nil {
