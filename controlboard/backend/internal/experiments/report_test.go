@@ -21,8 +21,9 @@ func Test_shouldReportDetectionLagAndRevenueWhenAPaymentOutageIsObserved(t *test
 	})
 	x := h.start(api.StartRequest{Scenario: "payment-provider-down", AutoRecover: true, DurationSec: 60})
 
-	// WHEN: payment applies the snapshot, payments fail, revenue halves, an alert fires after 20 s,
-	// a test alert and an older alert are present too, and the lag peaks at 9000
+	// WHEN: payment applies the snapshot, payments fail, revenue halves, a rule matches after 1 s
+	// (pending), alerts fire after 20 s, a test alert and an older alert are present too, and the
+	// lag peaks at 9000
 	h.appliedAll()
 	started := h.clock.Now()
 	h.obs.set(func(o *fakeObserver) {
@@ -44,11 +45,12 @@ func Test_shouldReportDetectionLagAndRevenueWhenAPaymentOutageIsObserved(t *test
 	if len(running) != 2 || !running[0].Confirmed || !running[1].Confirmed || running[1].Observed != "10.0 % successful" {
 		t.Fatalf("observations %+v", running)
 	}
-	// AND: the report shows time to detect 20 s, the real alerts, peak lag and the revenue loss
+	// AND: the report shows time to detect 1 s (the pending rule already detected it), the real
+	// alerts, peak lag and the revenue loss
 	h.obs.set(func(o *fakeObserver) { o.lag = 100; o.kpis = api.Kpis{RevenuePerMin: 60} })
 	h.advance(10 * time.Second)
 	r := h.experiment(x.ID).Report
-	if r.TimeToDetectSec == nil || *r.TimeToDetectSec != 20 || r.PeakLag != 9000 || len(r.Alerts) != 2 {
+	if r.TimeToDetectSec == nil || *r.TimeToDetectSec != 1 || r.PeakLag != 9000 || len(r.Alerts) != 3 {
 		t.Fatalf("report %+v", r)
 	}
 	if math.Abs(r.RevenueImpactEur-(-30)) > 0.01 || math.Abs(r.OrdersAffected-(200+6)) > 0.01 {

@@ -33,7 +33,8 @@ func (s *reportState) start(o api.Observer, now time.Time) {
 }
 
 // sample integrates the KPIs since the last sample and records alerts that started after
-// the experiment did (the first one is the time to detect).
+// the experiment did (the first one is the time to detect). Pending alerts count: the rule
+// already matched, only its `for:` window has not elapsed — short experiments recover before.
 func (s *reportState) sample(o api.Observer, started, now time.Time) {
 	k := o.Kpis()
 	dt := now.Sub(s.LastSample).Seconds()
@@ -43,7 +44,7 @@ func (s *reportState) sample(o api.Observer, started, now time.Time) {
 	s.DlqOrders += k.DlqPerMin * dt / 60
 	s.RevenueDeltaEur += (k.RevenuePerMin - s.StartKpis.RevenuePerMin) * dt / 60
 	for _, a := range o.Alerts() {
-		if a.Status != api.AlertFiring || a.StartsAt.Before(started) || a.Name == "LabTestAlert" {
+		if a.Status == api.AlertResolved || a.StartsAt.Before(started) || a.Name == "LabTestAlert" {
 			continue
 		}
 		if s.DetectedAt == nil || a.StartsAt.Before(*s.DetectedAt) {
