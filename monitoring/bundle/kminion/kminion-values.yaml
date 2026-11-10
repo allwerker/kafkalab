@@ -1,0 +1,47 @@
+# Portable bundle: KMinion (redpanda/kminion chart 0.17.x, app v2.5) values.
+# KMinion reads lag, topic/partition sizes and log dirs over the Kafka protocol (admin API), so
+# no per-partition JMX beans must be scraped inside the brokers. Cost on the cluster: one admin
+# client issuing ListOffsets/DescribeGroups/OffsetFetch per scrape, plus the end-to-end probe
+# producing ~2 small messages/s per partition of its own topic.
+kminion:
+  config:
+    logger:
+      level: warn
+    kafka:
+      brokers: ["kafka-lab-kafka-bootstrap.kafka:9092"]
+      clientId: kminion
+    minion:
+      consumerGroups:
+        enabled: true
+        scrapeMode: adminApi
+        granularity: partition
+        ignoredGroups: ["^kminion-end-to-end.*"]
+      topics:
+        enabled: true
+        granularity: partition
+        ignoredTopics: ["^__.*"]
+        infoMetric:
+          configKeys: ["cleanup.policy", "retention.ms", "retention.bytes", "min.insync.replicas"]
+      logDirs:
+        enabled: true
+      endToEnd:
+        enabled: true
+        probeInterval: 500ms
+        topicManagement:
+          enabled: true
+          name: kminion-end-to-end
+          replicationFactor: 3
+          partitionsPerBroker: 1
+        producer:
+          ackSla: 2s
+          requiredAcks: all
+        consumer:
+          groupIdPrefix: kminion-end-to-end
+          deleteStaleConsumerGroups: true
+          roundtripSla: 3s
+          commitSla: 2s
+resources:
+  requests: { memory: 96Mi, cpu: 20m }
+  limits: { memory: 96Mi }
+podLabels:
+  app.kubernetes.io/component: kminion

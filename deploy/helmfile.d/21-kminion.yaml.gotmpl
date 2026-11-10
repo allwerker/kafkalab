@@ -1,0 +1,17 @@
+# KMinion: consumer lag, topic sizes, end-to-end probe (portable bundle values).
+releases:
+  - name: kminion
+    namespace: kafka
+    chart: redpanda/kminion
+    version: 0.17.0
+    values:
+      - ../../monitoring/bundle/kminion/kminion-values.yaml
+      - kminion:
+          config:
+            minion:
+              endToEnd:
+                topicManagement:
+                  replicationFactor: {{ .Values.kafka.defaultReplicationFactor }}
+repositories:
+  - name: redpanda
+    url: https://charts.redpanda.com
