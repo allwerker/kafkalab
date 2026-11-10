@@ -48,6 +48,11 @@ func Test_shouldExportClientTrafficMetricsWhenAServiceProducesAndConsumes(t *tes
 	}
 
 	// THEN: connections, bytes, produce batches and fetched records are visible as metrics
+	// (franz-go runs the batch hook concurrently with ProduceSync returning, so allow a moment)
+	deadline := time.Now().Add(5 * time.Second)
+	for !strings.Contains(exposition(set), `kafka_client_produce_records_total{topic="orders.created"} 1`) && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
 	out := exposition(set)
 	for _, want := range []string{
 		"kafka_client_connects_total", "kafka_client_write_bytes_total", "kafka_client_read_bytes_total",
