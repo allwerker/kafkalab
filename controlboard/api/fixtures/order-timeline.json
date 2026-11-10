@@ -1,0 +1,44 @@
+{
+  "orderId": "0c7c2c37-31ca-4f80-bcde-e3d7038ed7f1",
+  "events": [
+    {
+      "topic": "orders.created",
+      "partition": 3,
+      "offset": 5096,
+      "orderId": "0c7c2c37-31ca-4f80-bcde-e3d7038ed7f1",
+      "kind": "created",
+      "at": "2026-01-15T10:01:45.930Z",
+      "valueCents": 15409,
+      "region": "eu-north"
+    },
+    {
+      "topic": "payments.completed",
+      "partition": 3,
+      "offset": 4368,
+      "orderId": "0c7c2c37-31ca-4f80-bcde-e3d7038ed7f1",
+      "kind": "paid",
+      "at": "2026-01-15T10:02:15.208Z",
+      "valueCents": 15409
+    },
+    {
+      "topic": "inventory.reserved",
+      "partition": 3,
+      "offset": 4448,
+      "orderId": "0c7c2c37-31ca-4f80-bcde-e3d7038ed7f1",
+      "kind": "reserved",
+      "at": "2026-01-15T10:02:19.137Z"
+    },
+    {
+      "topic": "orders.shipped",
+      "partition": 3,
+      "offset": 4216,
+      "orderId": "0c7c2c37-31ca-4f80-bcde-e3d7038ed7f1",
+      "kind": "shipped",
+      "at": "2026-01-15T10:02:19.650Z",
+      "carrier": "Hermes"
+    }
+  ],
+  "traceId": "1932a22c00cd923591e2d9287c9570a9",
+  "traceUrl": "http://traces.localhost:8080/trace/1932a22c00cd923591e2d9287c9570a9",
+  "logsUrl": "http://logs.localhost:8080/select/vmui/#/?query=orderId%3A%220c7c2c37-31ca-4f80-bcde-e3d7038ed7f1%22"
+}

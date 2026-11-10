@@ -1,0 +1,66 @@
+[
+  {
+    "id": "grafana",
+    "title": "Grafana",
+    "url": "http://grafana.localhost:8080",
+    "description": "Dashboards for Kafka, services and business KPIs",
+    "icon": "gauge",
+    "health": "up"
+  },
+  {
+    "id": "akhq",
+    "title": "AKHQ",
+    "url": "http://akhq.localhost:8080",
+    "description": "Browse topics, consumer groups and messages",
+    "icon": "layers",
+    "health": "up"
+  },
+  {
+    "id": "vmui",
+    "title": "VictoriaMetrics",
+    "url": "http://vm.localhost:8080/vmui",
+    "description": "Ad-hoc MetricsQL queries",
+    "icon": "database",
+    "health": "up"
+  },
+  {
+    "id": "vmagent",
+    "title": "vmagent targets",
+    "url": "http://vmagent.localhost:8080/targets",
+    "description": "Scrape targets and their health",
+    "icon": "radar",
+    "health": "up"
+  },
+  {
+    "id": "vmalert",
+    "title": "vmalert",
+    "url": "http://vmalert.localhost:8080",
+    "description": "Alerting and recording rules",
+    "icon": "bell-ring",
+    "health": "up"
+  },
+  {
+    "id": "alertmanager",
+    "title": "Alertmanager",
+    "url": "http://alertmanager.localhost:8080",
+    "description": "Silences, routing and notifications",
+    "icon": "siren",
+    "health": "up"
+  },
+  {
+    "id": "logs",
+    "title": "VictoriaLogs",
+    "url": "http://logs.localhost:8080/select/vmui",
+    "description": "Structured logs of every pod",
+    "icon": "scroll-text",
+    "health": "up"
+  },
+  {
+    "id": "traces",
+    "title": "VictoriaTraces",
+    "url": "http://traces.localhost:8080",
+    "description": "Distributed traces (Jaeger UI API)",
+    "icon": "waypoints",
+    "health": "degraded"
+  }
+]

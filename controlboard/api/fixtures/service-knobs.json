@@ -1,0 +1,12 @@
+{
+  "name": "notification",
+  "replicas": 1,
+  "readyReplicas": 1,
+  "paused": false,
+  "desiredGeneration": 2,
+  "appliedGeneration": 1,
+  "health": "degraded",
+  "knobs": {
+    "processingLatencyMs": 250
+  }
+}
