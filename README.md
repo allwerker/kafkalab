@@ -9,6 +9,7 @@ spikes, outages and broker failures, watch orders fly and parcels pile up, and r
 ## Quick start
 
 ```bash
+./start_stack.sh     # everything below in one step, then prints a short tutorial
 make bootstrap      # pinned toolchain into .tools/ (Go, kubectl, helm, helmfile, k3d) — no sudo
 make up             # k3d cluster + images + every Helm release (≈ 10 min the first time)
 make status         # pods and URLs
