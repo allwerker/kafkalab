@@ -27,10 +27,12 @@ var Queries = struct {
 	ReservationSuccessRate: `(sum(rate(lab_reservations_total{result="reserved"}[1m])) / sum(rate(lab_reservations_total[1m])))` +
 		` or (sum(rate(lab_records_produced_total{topic="inventory.reserved"}[1m])) / sum(rate(lab_records_produced_total{topic=~"inventory.reserved|inventory.rejected"}[1m])))`,
 	E2EP95Ms: `histogram_quantile(0.95, sum(rate(lab_order_completion_seconds_bucket{outcome="shipped"}[1m])) by (vmrange)) * 1000`,
-	InFlight: `clamp_min((sum(lab_orders_created_total) or vector(0)) - (sum(lab_orders_shipped_total) or vector(0))` +
-		` - (sum(lab_orders_cancelled_total) or vector(0)), 0)`,
+	// In flight = orders shipping is still waiting on + orders payment/inventory have not read yet.
+	// Gauges and lag survive pod restarts, unlike differences of counters.
+	InFlight: `(sum(lab_join_open_orders) or vector(0))` +
+		` + (max(sum by (group_id) (kminion_kafka_consumer_group_topic_lag{group_id=~"payment|inventory",topic="orders.created"})) or vector(0))`,
 	DlqPerMin: `(sum(rate(lab_dlq_total[1m])) or sum(rate(lab_dlq_records_total[1m]))) * 60`,
-	TotalLag:  `sum(kminion_kafka_consumer_group_topic_lag{group=~"payment|inventory|shipping|notification|analytics"})`,
+	TotalLag:  `sum(kminion_kafka_consumer_group_topic_lag{group_id=~"payment|inventory|shipping|notification|analytics"})`,
 
 	BrokerUp:              `max by (kafka_broker, pod) (up{namespace="kafka", pod=~"kafka-lab-.*"})`,
 	BrokerLeaders:         `max by (kafka_broker, pod) (kafka_server_replicamanager_leadercount)`,
