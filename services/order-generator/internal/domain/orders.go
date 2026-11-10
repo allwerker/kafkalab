@@ -91,24 +91,26 @@ func (g *Generator) Next(popularSKU string, popularProbability float64) Order {
 
 func (g *Generator) method() string {
 	r := g.rnd.Float64()
-	for _, m := range methods {
+	last := len(methods) - 1
+	for _, m := range methods[:last] {
 		if r < m.share {
 			return m.name
 		}
 		r -= m.share
 	}
-	return methods[len(methods)-1].name
+	return methods[last].name // the remaining share, including float rounding
 }
 
 func (g *Generator) product() Product {
 	r := g.rnd.Float64() * g.total
-	for _, p := range g.products {
+	last := len(g.products) - 1
+	for _, p := range g.products[:last] {
 		if r < p.Weight {
 			return p
 		}
 		r -= p.Weight
 	}
-	return g.products[len(g.products)-1]
+	return g.products[last] // the least popular product takes the remaining weight
 }
 
 func (g *Generator) find(sku string) Product {
@@ -119,6 +121,3 @@ func (g *Generator) find(sku string) Product {
 	}
 	return Product{SKU: sku, PriceCents: 1999}
 }
-
-// Float64 exposes the generator's random source for scenario decisions.
-func (g *Generator) Float64() float64 { return g.rnd.Float64() }

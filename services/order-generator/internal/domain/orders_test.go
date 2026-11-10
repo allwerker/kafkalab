@@ -80,7 +80,7 @@ func Test_shouldUseAFallbackPriceWhenTheFlashSaleProductIsUnknown(t *testing.T) 
 	o := g.Next("sku-999", 1)
 
 	// THEN: the order still has a valid price
-	if o.Lines[0].SKU != "sku-999" || o.Lines[0].PriceCents != 1999 || g.Float64() < 0 {
+	if o.Lines[0].SKU != "sku-999" || o.Lines[0].PriceCents != 1999 {
 		t.Fatalf("unexpected %+v", o.Lines[0])
 	}
 }

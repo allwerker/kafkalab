@@ -1,0 +1,3 @@
+memory: 80Mi
+env:
+  RESTOCK_EVERY: "10s"
