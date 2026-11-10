@@ -52,6 +52,28 @@ pod logs ─► VictoriaLogs        OTLP traces ─► VictoriaTraces
   production cluster.
 - **Decisions**: `docs/adr/`.
 
+## What to do first
+
+Follow `docs/guided-tour.md` (Black Friday, Payment Provider Down, broker failure, …).
+
+## Measured (default profile, 3 brokers, all extras)
+
+| | |
+|---|---|
+| Memory (process memory inside the k3d node: pods + k3s) | ≈ 7.5 GB (budget 10 GB); pods alone 5.9–6.3 GB working set; Kafka 3.4 GB, monitoring 1.9 GB |
+| Baseline traffic | 50 orders/s ≈ 400 events/s through 6 services |
+| Quality gate `make ci` | Go 100 % statement coverage (race detector on), 235 frontend tests (99.9 % lines, 95.7 % branches), alert rule unit tests, dashboard lint |
+| End-to-end `make e2e` | all web UIs reachable, all scrape targets up, 3 brokers / 1 controller, orders flow end to end, logs searchable, memory budget |
+
+## Dashboards and alerts
+
+- Bundle (folder *Kafka (bundle)*): Cluster Overview, Broker Deep Dive, KRaft Controller &
+  Quorum, Topics/Partitions/Storage, Consumer Groups & Lag, End-to-End Probe, JVM, Pods & Nodes.
+- Demo (folder *Kafka Lab*): Home, Commerce Business, Service & Client Runtime, Chaos
+  Experiments, Stack Footprint, Monitoring Overhead, PostgreSQL, Logs.
+- 24 Kafka alert rules (production and demo profiles) + 5 business rules, each with a runbook in
+  `docs/runbooks/`, routed through Alertmanager into the controlboard's alert panel.
+
 ## Development
 
 ```bash
