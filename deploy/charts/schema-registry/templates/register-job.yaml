@@ -1,0 +1,74 @@
+{{- /*
+Registers every lab value schema under "<topic>-value" and sets the global compatibility.
+Idempotent: re-posting an identical schema returns the existing id; an incompatible change fails the hook
+(and therefore the deploy) loudly. The request bodies are rendered here so the Job needs only curl.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: schema-registration
+  labels:
+    app.kubernetes.io/name: schema-registration
+    lab.kafka/tier: platform
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-1"
+    helm.sh/hook-delete-policy: before-hook-creation
+data:
+  config.json: {{ dict "compatibility" .Values.compatibility | toJson | quote }}
+  {{- range $topic, $type := .Values.subjects }}
+  {{- $schema := required (printf "schema %s missing (schemas/gen/%s.avsc)" $type $type) (get $.Values.schemas $type) }}
+  {{ printf "%s-value.json" $topic }}: {{ dict "schemaType" "AVRO" "schema" $schema | toJson | quote }}
+  {{- end }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: schema-registration
+  labels:
+    app.kubernetes.io/name: schema-registration
+    lab.kafka/tier: platform
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: schema-registration
+        lab.kafka/tier: platform
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: register
+          image: {{ .Values.registrationImage }}
+          command:
+            - sh
+            - -ec
+            - |
+              SR=http://schema-registry:8081
+              i=0
+              until curl -sf "$SR/subjects" >/dev/null; do
+                i=$((i+1)); [ "$i" -gt 150 ] && { echo "schema registry not reachable"; exit 1; }
+                echo "waiting for $SR ($i)"; sleep 2
+              done
+              curl -sf -X PUT -H 'Content-Type: application/vnd.schemaregistry.v1+json' \
+                --data @/requests/config.json "$SR/config"; echo
+              for f in /requests/*-value.json; do
+                subject="$(basename "$f" .json)"
+                out="$(curl -s -w '\n%{http_code}' -X POST -H 'Content-Type: application/vnd.schemaregistry.v1+json' \
+                  --data @"$f" "$SR/subjects/$subject/versions")"
+                code="$(echo "$out" | tail -n1)"
+                echo "$subject -> $code $(echo "$out" | head -n1)"
+                [ "$code" = "200" ] || exit 1
+              done
+          resources:
+            requests: { memory: 16Mi, cpu: 10m }
+            limits: { memory: 32Mi }
+          volumeMounts:
+            - { name: requests, mountPath: /requests }
+      volumes:
+        - name: requests
+          configMap: { name: schema-registration }
