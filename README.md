@@ -6,6 +6,18 @@ cluster (k3d). Everything is measured — system, Kafka, JVM, client and busines
 in VictoriaMetrics and shown in Grafana. A gamified **controlboard** lets you start traffic
 spikes, outages and broker failures, watch orders fly and parcels pile up, and receive alerts.
 
+![Controlboard: live view of orders flowing through the services, KPIs and alert panel](docs/images/controlboard-overview.png)
+
+| Kafka Cluster Overview (Grafana) | Consumer Groups & Lag (Grafana) |
+|---|---|
+| ![Kafka Cluster Overview dashboard](docs/images/grafana-kafka-overview.png) | ![Consumer Groups & Lag dashboard](docs/images/grafana-consumer-lag.png) |
+
+The launchpad links every web UI and dashboard:
+
+![Controlboard launchpad](docs/images/controlboard-launchpad.png)
+
+Screenshots are rendered from the running stack with `cd controlboard/web && bun run readme-shots`.
+
 ## Quick start
 
 ```bash

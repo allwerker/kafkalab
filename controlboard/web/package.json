@@ -15,7 +15,8 @@
     "smoke": "bun run scripts/smoke.ts",
     "live-check": "bun run scripts/live-check.ts",
     "perf-check": "bun run scripts/perf-check.ts",
-    "frame-profile": "bun run scripts/frame-profile.ts"
+    "frame-profile": "bun run scripts/frame-profile.ts",
+    "readme-shots": "bun run scripts/readme-shots.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.3.0",
