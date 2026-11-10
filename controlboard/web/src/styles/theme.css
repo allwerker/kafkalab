@@ -1,0 +1,144 @@
+/* Kafka Lab — "neon control room" design tokens (Grafana-dark inspired). */
+:root {
+  color-scheme: dark;
+
+  --bg-0: #07090e;
+  --bg-1: #0b0e14;
+  --panel: #11151e;
+  --panel-2: #161b26;
+  --panel-3: #1c2230;
+  --line: #232a38;
+  --line-2: #2e3647;
+
+  --text: #e4e8f0;
+  --text-dim: #9aa5b8;
+  --text-faint: #667085;
+
+  --cyan: #22d3ee;
+  --magenta: #e879f9;
+  --amber: #fbbf24;
+  --green: #34d399;
+  --red: #f43f5e;
+  --orange: #fb923c;
+  --blue: #60a5fa;
+  --violet: #a78bfa;
+  --ice: #7dd3fc;
+
+  --ok: var(--green);
+  --warn: var(--amber);
+  --bad: var(--red);
+
+  --glow-cyan: 0 0 0 1px rgb(34 211 238 / 0.35), 0 0 18px rgb(34 211 238 / 0.18);
+  --glow-red: 0 0 0 1px rgb(244 63 94 / 0.5), 0 0 22px rgb(244 63 94 / 0.3);
+  --glow-amber: 0 0 0 1px rgb(251 191 36 / 0.45), 0 0 18px rgb(251 191 36 / 0.2);
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --gap: 12px;
+
+  --font: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 140ms;
+  --t-med: 260ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, rgb(34 211 238 / 0.06), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgb(232 121 249 / 0.05), transparent 60%),
+    var(--bg-0);
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+a {
+  color: var(--cyan);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgb(34 211 238 / 0.3);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.muted {
+  color: var(--text-dim);
+}
+.small {
+  font-size: 12px;
+}
+.grow {
+  flex: 1;
+}
+.warn {
+  color: var(--amber);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 10px;
+  border: 2px solid var(--bg-1);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
