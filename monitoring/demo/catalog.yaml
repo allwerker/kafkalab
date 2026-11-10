@@ -1,0 +1,40 @@
+# Kafka Lab demo dashboards — platform metrics not covered by the bundle catalog
+# (../bundle/catalog.yaml) or the application contract (docs/contracts/metrics.md).
+# Checked by `make dashboards-lint`; no fixtures (these exporters are lab infrastructure).
+fixtures: {}
+metrics:
+  # vmagent per-target series
+  scrape_duration_seconds: {source: vmagent, type: gauge, meaning: "Time vmagent needed to scrape a target."}
+  scrape_samples_scraped: {source: vmagent, type: gauge, meaning: "Samples a target returned in the last scrape."}
+  scrape_samples_post_metric_relabeling: {source: vmagent, type: gauge, meaning: "Samples kept after metric relabelling (≈ series per target)."}
+  # VictoriaMetrics single / vmalert self-monitoring
+  vm_cache_entries: {source: victoriametrics, type: gauge, labels: [type], meaning: "Entries per internal cache; type=storage/hour_metric_ids = active series of the last hour."}
+  vm_data_size_bytes: {source: victoriametrics, type: gauge, labels: [type], meaning: "Bytes of stored data per storage type."}
+  vm_rows_inserted_total: {source: victoriametrics, type: counter, labels: [type], meaning: "Samples ingested per protocol."}
+  vmalert_iteration_duration_seconds_sum: {source: victoriametrics, type: summary, labels: [group], meaning: "Time spent evaluating a rule group (sum)."}
+  vmalert_iteration_duration_seconds_count: {source: victoriametrics, type: summary, labels: [group], meaning: "Rule group evaluations (count)."}
+  # Go runtime of the lab services (client_golang / VictoriaMetrics metrics library)
+  go_goroutines: {source: go, type: gauge, meaning: "Goroutines of the Go process."}
+  go_memstats_heap_inuse_bytes: {source: go, type: gauge, meaning: "Heap bytes in use by the Go process."}
+  go_gc_gomemlimit_bytes: {source: go, type: gauge, meaning: "Go soft memory limit (GOMEMLIMIT)."}
+  go_gc_duration_seconds_sum: {source: go, type: summary, meaning: "Total stop-the-world GC pause time of the Go process."}
+  # postgres_exporter
+  pg_up: {source: postgres, type: gauge, meaning: "1 if postgres_exporter can connect to PostgreSQL."}
+  pg_settings_max_connections: {source: postgres, type: gauge, meaning: "max_connections setting."}
+  pg_database_size_bytes: {source: postgres, type: gauge, labels: [datname], meaning: "Size of a database."}
+  pg_locks_count: {source: postgres, type: gauge, labels: [datname, mode], meaning: "Locks held per database and lock mode."}
+  pg_stat_activity_count: {source: postgres, type: gauge, labels: [datname, state], meaning: "Connections per database and state."}
+  pg_stat_activity_max_tx_duration: {source: postgres, type: gauge, labels: [datname, state], meaning: "Duration of the oldest running transaction (s)."}
+  pg_stat_database_numbackends: {source: postgres, type: gauge, labels: [datname], meaning: "Backends connected to a database."}
+  pg_stat_database_xact_commit: {source: postgres, type: counter, labels: [datname], meaning: "Committed transactions."}
+  pg_stat_database_xact_rollback: {source: postgres, type: counter, labels: [datname], meaning: "Rolled back transactions."}
+  pg_stat_database_blks_hit: {source: postgres, type: counter, labels: [datname], meaning: "Block reads served from shared buffers."}
+  pg_stat_database_blks_read: {source: postgres, type: counter, labels: [datname], meaning: "Block reads from disk / OS cache."}
+  pg_stat_database_tup_inserted: {source: postgres, type: counter, labels: [datname], meaning: "Rows inserted by all queries."}
+  pg_stat_database_tup_updated: {source: postgres, type: counter, labels: [datname], meaning: "Rows updated by all queries."}
+  pg_stat_database_tup_deleted: {source: postgres, type: counter, labels: [datname], meaning: "Rows deleted by all queries."}
+  pg_stat_database_tup_fetched: {source: postgres, type: counter, labels: [datname], meaning: "Rows fetched by queries."}
+  pg_stat_database_deadlocks: {source: postgres, type: counter, labels: [datname], meaning: "Deadlocks detected."}
+  pg_stat_database_temp_bytes: {source: postgres, type: counter, labels: [datname], meaning: "Bytes written to temporary files."}
+  pg_stat_user_tables_table_size_bytes: {source: postgres, type: gauge, labels: [schemaname, relname], meaning: "Size of a user table."}
+  pg_stat_user_tables_n_dead_tup: {source: postgres, type: gauge, labels: [schemaname, relname], meaning: "Dead row versions waiting for vacuum."}

@@ -168,11 +168,11 @@ func Test_shouldGiveEveryPanelKindItsOptionsWhenRendered(t *testing.T) {
 	panels := []*Panel{
 		ts,
 		TimeSeries("plain", "d", "s", Q("up", "")),
-		Stat("one", "d", "short", Q("up", "")).Neutral().Map("1", "up", Green).Opt("graphMode", "none"),
+		Stat("one", "d", "short", Q("up", "")).Neutral().Empty("none").Map("1", "up", Green).Opt("graphMode", "none"),
 		Stat("two", "d", "short", Q("up", "a"), Q("up", "b")).Neutral(),
 		Gauge("g", "d", "percentunit", Q("up", "")).Neutral(),
 		BarGauge("b", "d", "short", I("up", "{{pod}}")).Hue(Purple).Neutral(),
-		Table("t", "d", "short", I("up", "")).Neutral().Organize(map[string]string{"pod": "Pod"}, "Value"),
+		Table("t", "d", "short", I("up", "")).Neutral().Organize(map[string]string{"pod": "Pod"}, "Value").Order("pod"),
 		Heatmap("h", "d", "s", Target{Expr: "x_bucket", Format: "heatmap"}),
 		StateTimeline("st", "d", "none", Q("up", "")).Neutral(),
 		TextPanel("txt", "d", "# hi"),
@@ -197,13 +197,17 @@ func Test_shouldGiveEveryPanelKindItsOptionsWhenRendered(t *testing.T) {
 	if byTitle["ts"]["repeat"] != "request" || byTitle["plain"]["repeat"] != nil {
 		t.Error("repeat should only be set where requested")
 	}
+	if byTitle["one"]["fieldConfig"].(map[string]any)["defaults"].(map[string]any)["noValue"] != "none" {
+		t.Error("no-data text lost")
+	}
 	if byTitle["one"]["options"].(map[string]any)["textMode"] != "value" || byTitle["two"]["options"].(map[string]any)["textMode"] != "value_and_name" {
 		t.Error("stat text mode should depend on the number of queries")
 	}
 	if byTitle["b"]["targets"].([]any)[0].(map[string]any)["format"] != "time_series" {
 		t.Error("bar gauges need one series per bar, not a table frame")
 	}
-	if byTitle["t"]["targets"].([]any)[0].(map[string]any)["format"] != "table" || byTitle["t"]["transformations"] == nil {
+	org := byTitle["t"]["transformations"].([]any)[0].(map[string]any)["options"].(map[string]any)
+	if byTitle["t"]["targets"].([]any)[0].(map[string]any)["format"] != "table" || org["indexByName"].(map[string]any)["pod"].(float64) != 0 {
 		t.Error("tables need table-format instant queries and their transformations")
 	}
 	logsTarget := byTitle["l"]["targets"].([]any)[0].(map[string]any)

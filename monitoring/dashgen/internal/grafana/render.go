@@ -237,6 +237,9 @@ func fieldConfig(p *Panel) map[string]any {
 	if p.Unit != "" {
 		defaults["unit"] = p.Unit
 	}
+	if p.NoValue != "" {
+		defaults["noValue"] = p.NoValue
+	}
 	if p.Decimals != nil {
 		defaults["decimals"] = *p.Decimals
 	}

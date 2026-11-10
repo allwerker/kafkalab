@@ -99,6 +99,8 @@ type Panel struct {
 	Mappings       []Mapping
 	Transforms     []map[string]any
 	DS             *Datasource
+	// NoValue is shown instead of "No data" (e.g. "no CPU limit").
+	NoValue string
 	// Repeat repeats the panel horizontally for every selected value of this variable.
 	Repeat string
 }

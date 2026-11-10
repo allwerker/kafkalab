@@ -66,7 +66,8 @@ func Heatmap(title, desc, unit string, targets ...Target) *Panel {
 // StateTimeline shows discrete states over time (one lane per series).
 func StateTimeline(title, desc, unit string, targets ...Target) *Panel {
 	p := newPanel("state-timeline", title, desc, unit, 12, 6, targets)
-	p.ColorMode = "thresholds"
+	// value mappings colour the states; colour mode "thresholds" would bucket values instead
+	p.ColorMode, p.ColorFixed = "fixed", Blue
 	return p
 }
 
@@ -178,6 +179,20 @@ func (p *Panel) Organize(rename map[string]string, hide ...string) *Panel {
 	return p.Transform("organize", map[string]any{"excludeByName": excl, "renameByName": rename})
 }
 
+// Order fixes the column order (original field names) of the panel's organize transformation.
+func (p *Panel) Order(fields ...string) *Panel {
+	idx := map[string]any{}
+	for i, f := range fields {
+		idx[f] = i
+	}
+	for _, t := range p.Transforms {
+		if t["id"] == "organize" {
+			t["options"].(map[string]any)["indexByName"] = idx
+		}
+	}
+	return p
+}
+
 // Using sets a panel datasource (default: the dashboard default passed to Render).
 func (p *Panel) Using(ds Datasource) *Panel { p.DS = &ds; return p }
 
@@ -197,3 +212,6 @@ func sortName(calcs []string) string {
 
 // RepeatBy repeats the panel for every selected value of the variable.
 func (p *Panel) RepeatBy(variable string) *Panel { p.Repeat = variable; return p }
+
+// Empty sets the text shown when the query returns no data.
+func (p *Panel) Empty(text string) *Panel { p.NoValue = text; return p }
