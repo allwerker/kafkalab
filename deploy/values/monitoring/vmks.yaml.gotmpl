@@ -212,10 +212,10 @@ grafana:
     - victoriametrics-metrics-datasource
     - victoriametrics-logs-datasource
   resources:
-    requests: { memory: 512Mi, cpu: 50m }
-    limits: { memory: 512Mi }
+    requests: { memory: 640Mi, cpu: 50m }
+    limits: { memory: 640Mi }
   env:
-    GOMEMLIMIT: 360MiB
+    GOMEMLIMIT: 480MiB
     GOMAXPROCS: "2"
   grafana.ini:
     server:
