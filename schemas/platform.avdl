@@ -1,0 +1,89 @@
+/**
+ * Kafka Lab platform events — FROZEN CONTRACT.
+ * platform.control: compacted, key = service name, value = full desired state (never a delta).
+ * platform.audit:   append-only audit trail of every controlboard action.
+ */
+@namespace("lab.platform")
+protocol Platform {
+
+  /** Client settings for the Tuning Lab. null = keep the service default. */
+  record ClientTuning {
+    /** "all", "leader" or "none". Anything but "all" disables idempotence (lossy). */
+    union { null, string } acks = null;
+    union { null, int } lingerMs = null;
+    union { null, int } batchMaxBytes = null;
+    /** "none", "gzip", "snappy", "lz4", "zstd". */
+    union { null, string } compression = null;
+    union { null, int } fetchMaxBytes = null;
+    union { null, int } fetchMaxWaitMs = null;
+    union { null, int } fetchMinBytes = null;
+    union { null, int } maxPollRecords = null;
+  }
+
+  /** Runtime knobs. Every field has a neutral default; services ignore knobs that do not apply to them. */
+  record Knobs {
+    /** Stop consuming without crashing ("Silent Failure", "Recovery Storm"). */
+    boolean paused = false;
+    /** Extra processing time per record and its random jitter. */
+    int processingLatencyMs = 0;
+    int processingJitterMs = 0;
+    /** Probability of a transient processing error (retried, never dead-lettered). */
+    double processingErrorProbability = 0.0;
+    /** Probability of a business failure (payment declined, ...). null = service default. */
+    union { null, double } businessFailureProbability = null;
+    /** Payment provider outage: every authorisation fails with PROVIDER_UNAVAILABLE. */
+    boolean providerDown = false;
+    /** Extra latency for each database transaction ("Database Slowdown"). */
+    int dbLatencyMs = 0;
+    /** Client-side network faults on the business Kafka client ("Network Chaos"). */
+    int netLatencyMs = 0;
+    double netDropProbability = 0.0;
+    /** Shipping: warehouse outage, shipments are delayed until it ends. */
+    boolean warehouseOutage = false;
+
+    /** Generator only. null = default rate. */
+    union { null, double } ordersPerSecond = null;
+    /** Generator: share of orders for one popular SKU ("Flash Sale"). */
+    union { null, string } popularSku = null;
+    double popularSkuProbability = 0.0;
+    /** Generator: share of orders whose id hashes onto one partition ("Hot Partition"). */
+    union { null, int } hotPartition = null;
+    double hotPartitionRatio = 0.0;
+    /** Generator: payload filler per order ("Fat Messages"). */
+    int paddingBytes = 0;
+    /** Generator: probability to publish an order twice ("Duplicate Delivery"). */
+    double duplicateProbability = 0.0;
+    /** Generator: probability to publish an undecodable record ("Poison Message"). */
+    double poisonProbability = 0.0;
+
+    ClientTuning client = {};
+  }
+
+  /** topic: platform.control */
+  record ControlSnapshot {
+    /** Target service, e.g. "payment". Also the record key. */
+    string service;
+    /** Monotonic per service. Services report the applied generation as a metric. */
+    long generation;
+    timestamp_ms issuedAt;
+    /** After this instant the service falls back to baseline knobs on its own. null = no expiry. */
+    union { null, timestamp_ms } expiresAt = null;
+    /** Active experiment ids (opaque during an Incident Drill). */
+    array<string> experiments = [];
+    Knobs knobs;
+  }
+
+  /** topic: platform.audit */
+  record AuditEvent {
+    string eventId;
+    timestamp_ms at;
+    /** "user", "scheduler", "drill", "system". */
+    string actor;
+    /** e.g. "experiment.started", "experiment.reverted", "chaos.armed", "panic". */
+    string action;
+    union { null, string } experimentId = null;
+    /** Scenario id, or "hidden" while an Incident Drill is unsolved. */
+    union { null, string } scenario = null;
+    map<string> details = {};
+  }
+}

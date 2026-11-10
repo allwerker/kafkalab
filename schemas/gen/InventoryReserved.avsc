@@ -1,0 +1,67 @@
+{
+  "type" : "record",
+  "name" : "InventoryReserved",
+  "namespace" : "lab.commerce",
+  "doc" : "topic: inventory.reserved",
+  "fields" : [ {
+    "name" : "meta",
+    "type" : {
+      "type" : "record",
+      "name" : "EventMeta",
+      "doc" : "Envelope shared by every business event.",
+      "fields" : [ {
+        "name" : "eventId",
+        "type" : "string",
+        "doc" : "Unique id. Outcome events derive it deterministically from the causing event (see docs/contracts/events.md)."
+      }, {
+        "name" : "causationId",
+        "type" : "string",
+        "doc" : "Id of the event that caused this one; empty for orders.created.",
+        "default" : ""
+      }, {
+        "name" : "orderId",
+        "type" : "string"
+      }, {
+        "name" : "occurredAt",
+        "type" : {
+          "type" : "long",
+          "logicalType" : "timestamp-millis"
+        },
+        "doc" : "When this event happened."
+      }, {
+        "name" : "orderCreatedAt",
+        "type" : {
+          "type" : "long",
+          "logicalType" : "timestamp-millis"
+        },
+        "doc" : "When the order was created; carried along for end-to-end latency."
+      }, {
+        "name" : "producer",
+        "type" : "string",
+        "doc" : "Emitting service, e.g. \"payment\"."
+      } ]
+    }
+  }, {
+    "name" : "reservationId",
+    "type" : "string"
+  }, {
+    "name" : "warehouse",
+    "type" : "string"
+  }, {
+    "name" : "lines",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "ReservedLine",
+        "fields" : [ {
+          "name" : "sku",
+          "type" : "string"
+        }, {
+          "name" : "quantity",
+          "type" : "int"
+        } ]
+      }
+    }
+  } ]
+}

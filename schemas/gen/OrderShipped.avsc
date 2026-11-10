@@ -1,0 +1,57 @@
+{
+  "type" : "record",
+  "name" : "OrderShipped",
+  "namespace" : "lab.commerce",
+  "doc" : "topic: orders.shipped",
+  "fields" : [ {
+    "name" : "meta",
+    "type" : {
+      "type" : "record",
+      "name" : "EventMeta",
+      "doc" : "Envelope shared by every business event.",
+      "fields" : [ {
+        "name" : "eventId",
+        "type" : "string",
+        "doc" : "Unique id. Outcome events derive it deterministically from the causing event (see docs/contracts/events.md)."
+      }, {
+        "name" : "causationId",
+        "type" : "string",
+        "doc" : "Id of the event that caused this one; empty for orders.created.",
+        "default" : ""
+      }, {
+        "name" : "orderId",
+        "type" : "string"
+      }, {
+        "name" : "occurredAt",
+        "type" : {
+          "type" : "long",
+          "logicalType" : "timestamp-millis"
+        },
+        "doc" : "When this event happened."
+      }, {
+        "name" : "orderCreatedAt",
+        "type" : {
+          "type" : "long",
+          "logicalType" : "timestamp-millis"
+        },
+        "doc" : "When the order was created; carried along for end-to-end latency."
+      }, {
+        "name" : "producer",
+        "type" : "string",
+        "doc" : "Emitting service, e.g. \"payment\"."
+      } ]
+    }
+  }, {
+    "name" : "shipmentId",
+    "type" : "string"
+  }, {
+    "name" : "warehouse",
+    "type" : "string"
+  }, {
+    "name" : "carrier",
+    "type" : "string"
+  }, {
+    "name" : "trackingCode",
+    "type" : "string"
+  } ]
+}

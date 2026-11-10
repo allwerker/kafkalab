@@ -1,0 +1,6 @@
+{
+  "type" : "enum",
+  "name" : "CancellationReason",
+  "namespace" : "lab.commerce",
+  "symbols" : [ "PAYMENT_FAILED", "OUT_OF_STOCK", "BOTH_FAILED", "DEADLINE_EXCEEDED" ]
+}

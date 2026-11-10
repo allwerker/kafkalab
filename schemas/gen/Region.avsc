@@ -1,0 +1,6 @@
+{
+  "type" : "enum",
+  "name" : "Region",
+  "namespace" : "lab.commerce",
+  "symbols" : [ "NORTH", "SOUTH", "EAST", "WEST" ]
+}

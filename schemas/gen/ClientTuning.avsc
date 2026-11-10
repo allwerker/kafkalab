@@ -1,0 +1,41 @@
+{
+  "type" : "record",
+  "name" : "ClientTuning",
+  "namespace" : "lab.platform",
+  "doc" : "Client settings for the Tuning Lab. null = keep the service default.",
+  "fields" : [ {
+    "name" : "acks",
+    "type" : [ "null", "string" ],
+    "doc" : "\"all\", \"leader\" or \"none\". Anything but \"all\" disables idempotence (lossy).",
+    "default" : null
+  }, {
+    "name" : "lingerMs",
+    "type" : [ "null", "int" ],
+    "default" : null
+  }, {
+    "name" : "batchMaxBytes",
+    "type" : [ "null", "int" ],
+    "default" : null
+  }, {
+    "name" : "compression",
+    "type" : [ "null", "string" ],
+    "doc" : "\"none\", \"gzip\", \"snappy\", \"lz4\", \"zstd\".",
+    "default" : null
+  }, {
+    "name" : "fetchMaxBytes",
+    "type" : [ "null", "int" ],
+    "default" : null
+  }, {
+    "name" : "fetchMaxWaitMs",
+    "type" : [ "null", "int" ],
+    "default" : null
+  }, {
+    "name" : "fetchMinBytes",
+    "type" : [ "null", "int" ],
+    "default" : null
+  }, {
+    "name" : "maxPollRecords",
+    "type" : [ "null", "int" ],
+    "default" : null
+  } ]
+}

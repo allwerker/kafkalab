@@ -1,0 +1,6 @@
+{
+  "type" : "enum",
+  "name" : "PaymentMethod",
+  "namespace" : "lab.commerce",
+  "symbols" : [ "CARD", "PAYPAL", "INVOICE", "WALLET" ]
+}

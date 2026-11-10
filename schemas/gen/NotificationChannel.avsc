@@ -1,0 +1,6 @@
+{
+  "type" : "enum",
+  "name" : "NotificationChannel",
+  "namespace" : "lab.commerce",
+  "symbols" : [ "EMAIL", "SMS", "PUSH" ]
+}

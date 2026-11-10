@@ -1,0 +1,379 @@
+[
+  {
+    "type": "record",
+    "name": "EventMeta",
+    "doc": "Envelope shared by every business event.",
+    "fields": [
+      {
+        "name": "eventId",
+        "type": "string",
+        "doc": "Unique id. Outcome events derive it deterministically from the causing event (see docs/contracts/events.md)."
+      },
+      {
+        "name": "causationId",
+        "type": "string",
+        "doc": "Id of the event that caused this one; empty for orders.created.",
+        "default": ""
+      },
+      {
+        "name": "orderId",
+        "type": "string"
+      },
+      {
+        "name": "occurredAt",
+        "type": {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        },
+        "doc": "When this event happened."
+      },
+      {
+        "name": "orderCreatedAt",
+        "type": {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        },
+        "doc": "When the order was created; carried along for end-to-end latency."
+      },
+      {
+        "name": "producer",
+        "type": "string",
+        "doc": "Emitting service, e.g. \"payment\"."
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "PaymentMethod",
+    "symbols": [
+      "CARD",
+      "PAYPAL",
+      "INVOICE",
+      "WALLET"
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "Region",
+    "symbols": [
+      "NORTH",
+      "SOUTH",
+      "EAST",
+      "WEST"
+    ]
+  },
+  {
+    "type": "record",
+    "name": "OrderLine",
+    "fields": [
+      {
+        "name": "sku",
+        "type": "string"
+      },
+      {
+        "name": "quantity",
+        "type": "int"
+      },
+      {
+        "name": "unitPriceCents",
+        "type": "long"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "OrderCreated",
+    "doc": "topic: orders.created",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "customerId",
+        "type": "string"
+      },
+      {
+        "name": "region",
+        "type": "Region"
+      },
+      {
+        "name": "paymentMethod",
+        "type": "PaymentMethod"
+      },
+      {
+        "name": "lines",
+        "type": {
+          "type": "array",
+          "items": "OrderLine"
+        }
+      },
+      {
+        "name": "totalCents",
+        "type": "long"
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "default": "EUR"
+      },
+      {
+        "name": "padding",
+        "type": "bytes",
+        "doc": "Filler for the \"Fat Messages\" scenario; empty in normal operation.",
+        "default": ""
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "PaymentCompleted",
+    "doc": "topic: payments.completed",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "paymentId",
+        "type": "string"
+      },
+      {
+        "name": "amountCents",
+        "type": "long"
+      },
+      {
+        "name": "paymentMethod",
+        "type": "PaymentMethod"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "PaymentFailureReason",
+    "symbols": [
+      "DECLINED",
+      "PROVIDER_UNAVAILABLE",
+      "FRAUD_SUSPECTED"
+    ]
+  },
+  {
+    "type": "record",
+    "name": "PaymentFailed",
+    "doc": "topic: payments.failed",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "amountCents",
+        "type": "long"
+      },
+      {
+        "name": "reason",
+        "type": "PaymentFailureReason"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "PaymentRefunded",
+    "doc": "topic: payments.refunded — compensation after orders.cancelled for a captured payment.",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "paymentId",
+        "type": "string"
+      },
+      {
+        "name": "amountCents",
+        "type": "long"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "ReservedLine",
+    "fields": [
+      {
+        "name": "sku",
+        "type": "string"
+      },
+      {
+        "name": "quantity",
+        "type": "int"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "InventoryReserved",
+    "doc": "topic: inventory.reserved",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "reservationId",
+        "type": "string"
+      },
+      {
+        "name": "warehouse",
+        "type": "string"
+      },
+      {
+        "name": "lines",
+        "type": {
+          "type": "array",
+          "items": "ReservedLine"
+        }
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "InventoryRejectionReason",
+    "symbols": [
+      "OUT_OF_STOCK",
+      "UNKNOWN_SKU"
+    ]
+  },
+  {
+    "type": "record",
+    "name": "InventoryRejected",
+    "doc": "topic: inventory.rejected",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "reason",
+        "type": "InventoryRejectionReason"
+      },
+      {
+        "name": "sku",
+        "type": "string",
+        "doc": "First SKU that could not be reserved."
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "InventoryReleased",
+    "doc": "topic: inventory.released — compensation after orders.cancelled for a reserved order.",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "reservationId",
+        "type": "string"
+      },
+      {
+        "name": "lines",
+        "type": {
+          "type": "array",
+          "items": "ReservedLine"
+        }
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "name": "OrderShipped",
+    "doc": "topic: orders.shipped",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "shipmentId",
+        "type": "string"
+      },
+      {
+        "name": "warehouse",
+        "type": "string"
+      },
+      {
+        "name": "carrier",
+        "type": "string"
+      },
+      {
+        "name": "trackingCode",
+        "type": "string"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "CancellationReason",
+    "symbols": [
+      "PAYMENT_FAILED",
+      "OUT_OF_STOCK",
+      "BOTH_FAILED",
+      "DEADLINE_EXCEEDED"
+    ]
+  },
+  {
+    "type": "record",
+    "name": "OrderCancelled",
+    "doc": "topic: orders.cancelled — terminal negative state, decided by shipping.",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "reason",
+        "type": "CancellationReason"
+      },
+      {
+        "name": "refundRequired",
+        "type": "boolean",
+        "doc": "True if a payment was captured and must be refunded."
+      },
+      {
+        "name": "releaseRequired",
+        "type": "boolean",
+        "doc": "True if stock was reserved and must be released."
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "NotificationChannel",
+    "symbols": [
+      "EMAIL",
+      "SMS",
+      "PUSH"
+    ]
+  },
+  {
+    "type": "record",
+    "name": "NotificationSent",
+    "doc": "topic: notifications.sent",
+    "fields": [
+      {
+        "name": "meta",
+        "type": "EventMeta"
+      },
+      {
+        "name": "channel",
+        "type": "NotificationChannel"
+      },
+      {
+        "name": "template",
+        "type": "string",
+        "doc": "Template id, e.g. \"order-shipped\"."
+      }
+    ]
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "type" : "record",
+  "name" : "ReservedLine",
+  "namespace" : "lab.commerce",
+  "fields" : [ {
+    "name" : "sku",
+    "type" : "string"
+  }, {
+    "name" : "quantity",
+    "type" : "int"
+  } ]
+}

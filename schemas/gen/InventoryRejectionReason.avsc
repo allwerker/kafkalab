@@ -1,0 +1,6 @@
+{
+  "type" : "enum",
+  "name" : "InventoryRejectionReason",
+  "namespace" : "lab.commerce",
+  "symbols" : [ "OUT_OF_STOCK", "UNKNOWN_SKU" ]
+}

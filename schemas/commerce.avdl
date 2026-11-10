@@ -1,0 +1,131 @@
+/**
+ * Kafka Lab commerce events — FROZEN CONTRACT.
+ * One value type per topic (subject = "<topic>-value", TopicNameStrategy). Key = orderId (UTF-8 string).
+ * W3C trace context travels in Kafka headers, never in the payload.
+ * Evolution rule: only add fields with defaults (BACKWARD compatibility in the registry).
+ */
+@namespace("lab.commerce")
+protocol Commerce {
+
+  /** Envelope shared by every business event. */
+  record EventMeta {
+    /** Unique id. Outcome events derive it deterministically from the causing event (see docs/contracts/events.md). */
+    string eventId;
+    /** Id of the event that caused this one; empty for orders.created. */
+    string causationId = "";
+    string orderId;
+    /** When this event happened. */
+    timestamp_ms occurredAt;
+    /** When the order was created; carried along for end-to-end latency. */
+    timestamp_ms orderCreatedAt;
+    /** Emitting service, e.g. "payment". */
+    string producer;
+  }
+
+  enum PaymentMethod { CARD, PAYPAL, INVOICE, WALLET }
+  enum Region { NORTH, SOUTH, EAST, WEST }
+
+  record OrderLine {
+    string sku;
+    int quantity;
+    long unitPriceCents;
+  }
+
+  /** topic: orders.created */
+  record OrderCreated {
+    EventMeta meta;
+    string customerId;
+    Region region;
+    PaymentMethod paymentMethod;
+    array<OrderLine> lines;
+    long totalCents;
+    string currency = "EUR";
+    /** Filler for the "Fat Messages" scenario; empty in normal operation. */
+    bytes padding = "";
+  }
+
+  /** topic: payments.completed */
+  record PaymentCompleted {
+    EventMeta meta;
+    string paymentId;
+    long amountCents;
+    PaymentMethod paymentMethod;
+  }
+
+  enum PaymentFailureReason { DECLINED, PROVIDER_UNAVAILABLE, FRAUD_SUSPECTED }
+
+  /** topic: payments.failed */
+  record PaymentFailed {
+    EventMeta meta;
+    long amountCents;
+    PaymentFailureReason reason;
+  }
+
+  /** topic: payments.refunded — compensation after orders.cancelled for a captured payment. */
+  record PaymentRefunded {
+    EventMeta meta;
+    string paymentId;
+    long amountCents;
+  }
+
+  record ReservedLine {
+    string sku;
+    int quantity;
+  }
+
+  /** topic: inventory.reserved */
+  record InventoryReserved {
+    EventMeta meta;
+    string reservationId;
+    string warehouse;
+    array<ReservedLine> lines;
+  }
+
+  enum InventoryRejectionReason { OUT_OF_STOCK, UNKNOWN_SKU }
+
+  /** topic: inventory.rejected */
+  record InventoryRejected {
+    EventMeta meta;
+    InventoryRejectionReason reason;
+    /** First SKU that could not be reserved. */
+    string sku;
+  }
+
+  /** topic: inventory.released — compensation after orders.cancelled for a reserved order. */
+  record InventoryReleased {
+    EventMeta meta;
+    string reservationId;
+    array<ReservedLine> lines;
+  }
+
+  /** topic: orders.shipped */
+  record OrderShipped {
+    EventMeta meta;
+    string shipmentId;
+    string warehouse;
+    string carrier;
+    string trackingCode;
+  }
+
+  enum CancellationReason { PAYMENT_FAILED, OUT_OF_STOCK, BOTH_FAILED, DEADLINE_EXCEEDED }
+
+  /** topic: orders.cancelled — terminal negative state, decided by shipping. */
+  record OrderCancelled {
+    EventMeta meta;
+    CancellationReason reason;
+    /** True if a payment was captured and must be refunded. */
+    boolean refundRequired;
+    /** True if stock was reserved and must be released. */
+    boolean releaseRequired;
+  }
+
+  enum NotificationChannel { EMAIL, SMS, PUSH }
+
+  /** topic: notifications.sent */
+  record NotificationSent {
+    EventMeta meta;
+    NotificationChannel channel;
+    /** Template id, e.g. "order-shipped". */
+    string template;
+  }
+}

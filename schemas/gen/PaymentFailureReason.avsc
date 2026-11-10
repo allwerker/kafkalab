@@ -1,0 +1,6 @@
+{
+  "type" : "enum",
+  "name" : "PaymentFailureReason",
+  "namespace" : "lab.commerce",
+  "symbols" : [ "DECLINED", "PROVIDER_UNAVAILABLE", "FRAUD_SUSPECTED" ]
+}

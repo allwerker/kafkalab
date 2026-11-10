@@ -1,0 +1,40 @@
+{
+  "type" : "record",
+  "name" : "AuditEvent",
+  "namespace" : "lab.platform",
+  "doc" : "topic: platform.audit",
+  "fields" : [ {
+    "name" : "eventId",
+    "type" : "string"
+  }, {
+    "name" : "at",
+    "type" : {
+      "type" : "long",
+      "logicalType" : "timestamp-millis"
+    }
+  }, {
+    "name" : "actor",
+    "type" : "string",
+    "doc" : "\"user\", \"scheduler\", \"drill\", \"system\"."
+  }, {
+    "name" : "action",
+    "type" : "string",
+    "doc" : "e.g. \"experiment.started\", \"experiment.reverted\", \"chaos.armed\", \"panic\"."
+  }, {
+    "name" : "experimentId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "scenario",
+    "type" : [ "null", "string" ],
+    "doc" : "Scenario id, or \"hidden\" while an Incident Drill is unsolved.",
+    "default" : null
+  }, {
+    "name" : "details",
+    "type" : {
+      "type" : "map",
+      "values" : "string"
+    },
+    "default" : { }
+  } ]
+}
