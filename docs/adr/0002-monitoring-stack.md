@@ -56,15 +56,17 @@ alertmanager / akhq `.localhost:8080`.
 ## Alerting
 
 Alertmanager routes everything to `http://controlboard.control:8080/api/alerts/webhook`
-(group_by alertname, group_wait 5s, group_interval 10s, repeat 1h, send_resolved). Disabled default
+(group_by alertname, group_wait 5s, group_interval 10s, repeat 1h, send_resolved). Exception:
+`Alertmanager(Cluster)FailedToSendAlerts` go to a no-op `blackhole` receiver — "the webhook fails" cannot
+be delivered through that webhook, and trying keeps the alert firing forever. Disabled default
 rules (always/meaningless firing on single-node k3d): `Watchdog`, `InfoInhibitor`, `KubeCPUOvercommit`,
 `KubeMemoryOvercommit`, `NodeClockNotSynchronising`, `NodeClockSkewDetected`,
 `KubePersistentVolumeFillingUp`, `NodeFilesystemAlmostOutOfSpace`, `NodeFilesystemSpaceFillingUp`
 (local-path PVs and the node fs are the host disk), group `kube-apiserver-availability.rules`.
 
 Known, expected until other tickets land: `ScrapePoolHasNoTargets` for `lab-services` (after 30 min
-without Go pods) and `AlertmanagerFailedToSendAlerts` whenever something fires while the controlboard
-does not exist yet.
+without Go pods) and `AlertmanagerFailedToSendAlerts` (for ~15 min, its rate window) whenever something
+fires while the controlboard does not exist yet.
 
 ## Deviations from platform.md
 
