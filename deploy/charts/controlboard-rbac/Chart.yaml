@@ -1,0 +1,5 @@
+apiVersion: v2
+name: controlboard-rbac
+description: Allowlist RBAC for the controlboard's chaos actions (Roles + RoleBindings in commerce and kafka)
+type: application
+version: 0.1.0

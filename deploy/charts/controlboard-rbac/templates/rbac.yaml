@@ -1,0 +1,73 @@
+# Allowlist for the controlboard's experiment engine (docs/adr/0003-broker-chaos.md).
+# Nothing here grants create/update of workloads, secrets, PVCs or the Kafka CR's spec.
+{{- $sa := .Values.serviceAccount }}
+---
+# commerce: scale services (Regional Outage, Rebalance Storm, reset, manual scale), remember the
+# previous replica count as annotation lab.kafka/revert, kill pods (Consumer Crash Loop).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: controlboard-chaos
+  namespace: {{ .Values.commerceNamespace }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: controlboard-chaos
+  namespace: {{ .Values.commerceNamespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: controlboard-chaos
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa.name }}
+    namespace: {{ $sa.namespace }}
+---
+# kafka: broker pods (Rolling Restart, Broker Crash), the chaos-net helper as ephemeral container
+# (Broker Partition / Network), the Strimzi operator's scale (keeps a crashed broker down) and the
+# Kafka CR's annotations (panic removes strimzi.io/pause-reconciliation).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: controlboard-chaos
+  namespace: {{ .Values.kafkaNamespace }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/ephemeralcontainers"]
+    verbs: ["patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale"]
+    resourceNames: [{{ .Values.strimziOperatorDeployment | quote }}]
+    verbs: ["get", "patch"]
+  - apiGroups: ["kafka.strimzi.io"]
+    resources: ["kafkas"]
+    resourceNames: [{{ .Values.kafkaCluster | quote }}]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: controlboard-chaos
+  namespace: {{ .Values.kafkaNamespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: controlboard-chaos
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa.name }}
+    namespace: {{ $sa.namespace }}

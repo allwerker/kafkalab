@@ -1,0 +1,8 @@
+# ServiceAccount of the controlboard (created by the controlboard release itself).
+serviceAccount:
+  name: controlboard
+  namespace: control
+commerceNamespace: commerce
+kafkaNamespace: kafka
+kafkaCluster: kafka-lab
+strimziOperatorDeployment: strimzi-cluster-operator
