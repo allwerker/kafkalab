@@ -1,0 +1,17 @@
+{{- range $key, $folder := .Values.folders }}
+{{- range $file, $json := $folder.dashboards }}
+{{- $name := printf "dashboard-%s-%s" $key ($file | trimSuffix ".json" | lower | replace "_" "-" | replace "." "-") | trunc 63 | trimSuffix "-" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: kafka-lab-dashboards
+  annotations:
+    grafana_folder: {{ $folder.title | quote }}
+data:
+  {{ $file }}: {{ $json | quote }}
+{{- end }}
+{{- end }}

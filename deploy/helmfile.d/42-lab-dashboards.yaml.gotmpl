@@ -1,0 +1,21 @@
+# T106: Grafana dashboards. Every *.json in monitoring/bundle/dashboards (folder "Kafka (bundle)") and
+# monitoring/demo/dashboards (folder "Kafka Lab") becomes a ConfigMap picked up by the Grafana sidecar.
+# Drop a file there and run `make deploy` — no other registration needed.
+{{- $dirs := dict "bundle" "../../monitoring/bundle/dashboards" "demo" "../../monitoring/demo/dashboards" }}
+releases:
+  - name: lab-dashboards
+    namespace: monitoring
+    chart: ../charts/lab-dashboards
+    values:
+      - folders:
+{{- range $key, $dir := $dirs }}
+          {{ $key }}:
+            dashboards:
+{{- if isDir $dir }}
+{{- range $f := readDir $dir }}
+{{- if hasSuffix ".json" $f }}
+              {{ base $f | quote }}: {{ readFile $f | toJson }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,9 @@
+# T105: PostgreSQL 18 + postgres_exporter, per-service roles/schemas, Secret `postgres-credentials`
+# replicated into data/commerce/control.
+releases:
+  - name: postgres
+    namespace: data
+    createNamespace: true
+    chart: ../charts/postgres
+    wait: true
+    timeout: 600

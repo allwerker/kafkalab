@@ -1,0 +1,10 @@
+# T106: scrape objects — portable Strimzi bundle scrape (monitoring/bundle/scrape) + lab Go services.
+releases:
+  - name: lab-scrapes
+    namespace: monitoring
+    chart: ../charts/lab-scrapes
+    values:
+      - akhq: {{ .Values.extras.akhq }}
+    set:
+      - name: strimziScrape
+        file: ../../monitoring/bundle/scrape/strimzi-vmpodscrape.yaml

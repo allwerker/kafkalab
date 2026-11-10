@@ -1,0 +1,5 @@
+apiVersion: v2
+name: lab-dashboards
+description: Grafana dashboards of the Kafka Lab as sidecar-provisioned ConfigMaps (one per JSON file, foldered)
+type: application
+version: 0.1.0

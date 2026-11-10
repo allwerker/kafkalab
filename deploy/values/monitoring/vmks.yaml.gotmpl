@@ -1,0 +1,261 @@
+# victoria-metrics-k8s-stack values for the Kafka Lab (k3s single node). Release name: vmks.
+# Service names produced (see docs/contracts/platform.md): vmsingle-vmks, vmagent-vmks, vmalert-vmks,
+# vmalertmanager-vmks, grafana.
+fullnameOverride: vmks
+
+victoria-metrics-operator:
+  enabled: true
+  fullnameOverride: vm-operator
+  resources:
+    requests: { memory: 96Mi, cpu: 50m }
+    limits: { memory: 160Mi }
+  operator:
+    # Strimzi does not create PodMonitors; nothing to convert, saves watches.
+    disable_prometheus_converter: true
+
+# ---------------------------------------------------------------------------------------------------
+# Storage, scraping, alerting
+# ---------------------------------------------------------------------------------------------------
+vmsingle:
+  spec:
+    retentionPeriod: 7d
+    resources:
+      requests: { memory: 512Mi, cpu: 100m }
+      limits: { memory: 512Mi }
+    storage:
+      resources:
+        requests:
+          storage: 10Gi
+    extraEnvs:
+      - { name: GOMAXPROCS, value: "2" }
+    extraArgs:
+      search.latencyOffset: 5s
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [vm.localhost]
+
+vmagent:
+  spec:
+    scrapeInterval: 15s
+    resources:
+      requests: { memory: 192Mi, cpu: 100m }
+      limits: { memory: 192Mi }
+    # Without a CPU limit Go sizes per-CPU buffers for all host cores; keep vmagent small.
+    extraEnvs:
+      - { name: GOMAXPROCS, value: "2" }
+    extraArgs:
+      promscrape.streamParse: "true"
+      promscrape.dropOriginalLabels: "true"
+      remoteWrite.queues: "2"
+      memory.allowedPercent: "40"
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [vmagent.localhost]
+
+vmalert:
+  spec:
+    evaluationInterval: 15s
+    resources:
+      requests: { memory: 96Mi, cpu: 50m }
+      limits: { memory: 96Mi }
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [vmalert.localhost]
+
+alertmanager:
+  spec:
+    image:
+      tag: {{ requiredEnv "ALERTMANAGER_VERSION" }}
+    resources:
+      requests: { memory: 64Mi, cpu: 20m }
+      limits: { memory: 64Mi }
+    externalURL: http://alertmanager.localhost:8080
+  monzoTemplate:
+    enabled: false
+  config:
+    route:
+      receiver: controlboard
+      group_by: [alertname]
+      group_wait: 5s
+      group_interval: 10s
+      repeat_interval: 1h
+      routes:
+        # "the webhook is failing" cannot be delivered through that same webhook; sending it anyway
+        # keeps the failure counter rising and the alert firing forever. Visible in Alertmanager/vmalert.
+        - matchers:
+            - alertname=~"Alertmanager(Cluster)?FailedToSendAlerts"
+          receiver: blackhole
+    receivers:
+      - name: blackhole
+      - name: controlboard
+        webhook_configs:
+          - url: http://controlboard.control:8080/api/alerts/webhook
+            send_resolved: true
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [alertmanager.localhost]
+
+# ---------------------------------------------------------------------------------------------------
+# What to scrape on k3s
+# ---------------------------------------------------------------------------------------------------
+kubelet:
+  enabled: true
+kubeApiServer:
+  enabled: false        # high cardinality, not needed for the lab
+kubeControllerManager:
+  enabled: false        # embedded in the k3s binary, not exposed
+kubeScheduler:
+  enabled: false        # embedded in the k3s binary, not exposed
+kubeEtcd:
+  enabled: false        # k3s single server uses kine/sqlite
+kubeProxy:
+  enabled: false
+coreDns:
+  enabled: true
+
+prometheus-node-exporter:
+  fullnameOverride: node-exporter
+  resources:
+    requests: { memory: 48Mi, cpu: 20m }
+    limits: { memory: 48Mi }
+
+kube-state-metrics:
+  fullnameOverride: kube-state-metrics
+  resources:
+    requests: { memory: 96Mi, cpu: 20m }
+    limits: { memory: 96Mi }
+
+# ---------------------------------------------------------------------------------------------------
+# Default rules: drop everything that is permanently firing or meaningless on a single k3s node.
+# ---------------------------------------------------------------------------------------------------
+defaultRules:
+  rules:
+    Watchdog: { enabled: false }
+    InfoInhibitor: { enabled: false }
+    # single node: "requests > allocatable minus the largest node" is always true
+    KubeCPUOvercommit: { enabled: false }
+    KubeMemoryOvercommit: { enabled: false }
+    # k3d runs inside Docker, clock sync is the host's business
+    NodeClockNotSynchronising: { enabled: false }
+    NodeClockSkewDetected: { enabled: false }
+    # local-path PVs and the node's root fs are the host's disk: fill level/prediction says nothing
+    # about the lab and fires on any developer laptop with a fuller disk.
+    KubePersistentVolumeFillingUp: { enabled: false }
+    NodeFilesystemAlmostOutOfSpace: { enabled: false }
+    NodeFilesystemSpaceFillingUp: { enabled: false }
+  groups:
+    # apiserver is not scraped (kubeApiServer.enabled=false) but this group is not gated by it
+    kube-apiserver-availability.rules:
+      enabled: false
+
+# ---------------------------------------------------------------------------------------------------
+# Default dashboards (fetched by the chart's sync job) — keep only what works on k3s
+# ---------------------------------------------------------------------------------------------------
+defaultDashboards:
+  annotations:
+    grafana_folder: Kubernetes & VictoriaMetrics
+  dashboards:
+    apiserver: { enabled: false }                       # apiserver is not scraped
+    k8s-resources-multicluster: { enabled: false }      # single cluster
+    k8s-resources-windows-cluster: { enabled: false }
+    k8s-resources-windows-namespace: { enabled: false }
+    k8s-resources-windows-pod: { enabled: false }
+    k8s-windows-cluster-rsrc-use: { enabled: false }
+    k8s-windows-node-rsrc-use: { enabled: false }
+    nodes-aix: { enabled: false }
+    nodes-darwin: { enabled: false }
+    prometheus: { enabled: false }                      # there is no Prometheus server
+    prometheus-remote-write: { enabled: false }
+
+# ---------------------------------------------------------------------------------------------------
+# Grafana
+# ---------------------------------------------------------------------------------------------------
+defaultDatasources:
+  victoriametrics:
+    datasources:
+      - name: VictoriaMetrics
+        type: prometheus
+        access: proxy
+        uid: vm
+        isDefault: true
+        jsonData:
+          timeInterval: 15s
+      - name: VictoriaMetrics (MetricsQL)
+        type: victoriametrics-metrics-datasource
+        access: proxy
+        uid: vm-native
+        isDefault: false
+        plugin: true
+  alertmanager:
+    datasources:
+      - name: Alertmanager
+        access: proxy
+        uid: alertmanager
+        jsonData:
+          implementation: prometheus
+          handleGrafanaManagedAlerts: false
+
+grafana:
+  enabled: true
+  fullnameOverride: grafana
+  testFramework:
+    enabled: false
+  image:
+    tag: "{{ requiredEnv "GRAFANA_VERSION" }}"
+  adminUser: admin
+  adminPassword: admin
+  plugins:
+    - victoriametrics-metrics-datasource
+  resources:
+    requests: { memory: 512Mi, cpu: 50m }
+    limits: { memory: 512Mi }
+  env:
+    GOMEMLIMIT: 360MiB
+    GOMAXPROCS: "2"
+  grafana.ini:
+    server:
+      root_url: http://grafana.localhost:8080
+    auth.anonymous:
+      enabled: true
+      org_name: Main Org.
+      org_role: Viewer
+    security:
+      allow_embedding: true
+      cookie_samesite: lax
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+      check_for_plugin_updates: false
+      feedback_links_enabled: false
+    news:
+      news_feed_enabled: false
+    users:
+      default_theme: dark
+  sidecar:
+    resources:
+      requests: { memory: 64Mi, cpu: 10m }
+      limits: { memory: 128Mi }
+    datasources:
+      enabled: true
+      label: grafana_datasource
+      labelValue: "1"
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      folderAnnotation: grafana_folder
+      searchNamespace: monitoring
+      provider:
+        name: default
+        orgid: 1
+        foldersFromFilesStructure: true
+        allowUiUpdates: false
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    pathType: Prefix
+    hosts: [grafana.localhost]

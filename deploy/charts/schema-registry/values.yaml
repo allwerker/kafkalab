@@ -1,0 +1,27 @@
+image: ghcr.io/aiven-open/karapace:6.2.4
+registrationImage: curlimages/curl:8.23.0
+memory: 192Mi
+bootstrap: kafka-lab-kafka-bootstrap.kafka:9092
+schemaTopic: _schemas
+compatibility: BACKWARD
+
+kafka:
+  defaultReplicationFactor: 3
+
+# topic -> Avro record type; subject = "<topic>-value" (TopicNameStrategy, one value type per topic)
+subjects:
+  orders.created: OrderCreated
+  payments.completed: PaymentCompleted
+  payments.failed: PaymentFailed
+  payments.refunded: PaymentRefunded
+  inventory.reserved: InventoryReserved
+  inventory.rejected: InventoryRejected
+  inventory.released: InventoryReleased
+  orders.shipped: OrderShipped
+  orders.cancelled: OrderCancelled
+  notifications.sent: NotificationSent
+  platform.control: ControlSnapshot
+  platform.audit: AuditEvent
+
+# Record type -> .avsc content. Filled by helmfile from schemas/gen/*.avsc (never edit by hand).
+schemas: {}

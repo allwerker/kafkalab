@@ -1,0 +1,68 @@
+# Kafka monitoring bundle — Prometheus Operator equivalent of strimzi-vmpodscrape.yaml (PodMonitor).
+# Not deployed by the lab (it runs the VictoriaMetrics operator); provided for Prometheus Operator users.
+# Bundle label contract: kafka_cluster (strimzi.io/cluster), kafka_broker (KRaft node id).
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: strimzi-kafka
+  labels:
+    app.kubernetes.io/part-of: kafka-monitoring-bundle
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      strimzi.io/kind: Kafka
+    matchExpressions:
+      - { key: strimzi.io/component-type, operator: In, values: [kafka] }
+  podMetricsEndpoints:
+    - port: tcp-prometheus
+      path: /metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+          targetLabel: kafka_cluster
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          regex: '.*-([0-9]+)$'
+          targetLabel: kafka_broker
+          replacement: '$1'
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_pool_name]
+          targetLabel: kafka_pool
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: strimzi-cluster-operator
+  labels:
+    app.kubernetes.io/part-of: kafka-monitoring-bundle
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      strimzi.io/kind: cluster-operator
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  # topic operator only; add port healthcheck-uo if the user operator runs
+  name: strimzi-entity-operator
+  labels:
+    app.kubernetes.io/part-of: kafka-monitoring-bundle
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      strimzi.io/kind: Kafka
+      strimzi.io/component-type: entity-operator
+  podMetricsEndpoints:
+    - port: healthcheck-to
+      path: /metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+          targetLabel: kafka_cluster
