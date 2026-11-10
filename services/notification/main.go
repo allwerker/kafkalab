@@ -14,7 +14,7 @@ import (
 
 func main() {
 	app.Run(contracts.ServiceNotification, app.Options{}, func(ctx context.Context, a *app.App) error {
-		latency := a.Env.Duration("SEND_LATENCY", 2*time.Millisecond)
+		latency := a.Env.Duration("SEND_LATENCY", time.Millisecond)
 		keep := a.Env.Duration("NOTIFICATION_RETENTION", time.Hour)
 		if err := a.Env.Err(); err != nil {
 			return err

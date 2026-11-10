@@ -107,7 +107,7 @@ type Config struct {
 	// JanitorEvery is how often old processed event ids are purged (default 1 min).
 	JanitorEvery time.Duration
 	// PartitionConcurrency is how many partitions of one poll are processed in parallel
-	// (default 4; keep it below the database pool size).
+	// (default 6; keep it below the database pool size).
 	PartitionConcurrency int
 
 	Backoff func(attempt int) time.Duration
@@ -152,7 +152,7 @@ func New(cfg Config) *Runner {
 		cfg.JanitorEvery = time.Minute
 	}
 	if cfg.PartitionConcurrency <= 0 {
-		cfg.PartitionConcurrency = 4
+		cfg.PartitionConcurrency = 6
 	}
 	if cfg.Backoff == nil {
 		cfg.Backoff = func(attempt int) time.Duration {

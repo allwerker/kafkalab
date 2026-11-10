@@ -68,7 +68,7 @@ func Test_shouldUseSafeDefaultsWhenOnlyTheEssentialsAreConfigured(t *testing.T) 
 
 	// THEN: the group is the service name and retries back off up to five seconds
 	if cfg.Group != "inventory" || cfg.Backoff(1) != 250*time.Millisecond || cfg.Backoff(100) != 5*time.Second ||
-		cfg.DedupWindow != time.Hour || cfg.JanitorEvery != time.Minute || cfg.PartitionConcurrency != 4 || cfg.Metrics == nil || cfg.Sleep == nil {
+		cfg.DedupWindow != time.Hour || cfg.JanitorEvery != time.Minute || cfg.PartitionConcurrency != 6 || cfg.Metrics == nil || cfg.Sleep == nil {
 		t.Fatalf("unexpected defaults %+v", cfg)
 	}
 }
