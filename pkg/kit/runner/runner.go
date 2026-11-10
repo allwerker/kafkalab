@@ -356,7 +356,8 @@ func (r *Runner) processPartition(ctx context.Context, cl *kgo.Client, topic str
 			r.cfg.Log.InfoContext(ctx, "partition moved to another pod, dropping batch", "topic", topic, "partition", partition)
 			return
 		}
-		outs, stats, err := r.processBatch(ctx, topic, recs)
+		hooks := &commitHooks{}
+		outs, stats, err := r.processBatch(context.WithValue(ctx, commitKey{}, hooks), topic, recs)
 		reason := "db"
 		if err == nil {
 			reason = "produce"
@@ -367,6 +368,7 @@ func (r *Runner) processPartition(ctx context.Context, cl *kgo.Client, topic str
 			reason = "registry"
 		}
 		if err == nil {
+			hooks.run()
 			cl.MarkCommitRecords(recs[len(recs)-1])
 			r.record(topic, stats, start)
 			return

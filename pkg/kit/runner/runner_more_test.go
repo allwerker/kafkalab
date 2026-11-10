@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -219,5 +220,42 @@ func Test_shouldCommitWithoutPublishingWhenTheHandlerHasNothingToPublish(t *test
 	})
 	if calls.Load() != 1 || h.hasMetric("lab_records_produced_total") {
 		t.Fatalf("calls=%d\n%s", calls.Load(), h.metrics())
+	}
+}
+
+func Test_shouldCountEachOrderOnceWhenTheBatchIsRetriedAfterAFailure(t *testing.T) {
+	// GIVEN: an analytics-style handler that counts in memory and fails on its first attempt
+	h := newHarness(t)
+	var attempts, counted atomic.Int64
+	h.start(h.runner(HandlerFunc(func(ctx context.Context, _ pgx.Tx, _ Input) ([]Output, error) {
+		OnCommit(ctx, func() { counted.Add(1) })
+		if attempts.Add(1) == 1 {
+			return nil, errors.New("connection refused")
+		}
+		return nil, nil
+	})))
+
+	// WHEN: one order arrives and its batch is retried
+	h.produce(order("o-count", 1))
+	h.eventually("processed", func() bool {
+		return h.hasMetric(`lab_records_processed_total{topic="orders.created",result="ok"} 1`)
+	})
+
+	// THEN: the counter moved exactly once although the handler ran twice
+	if attempts.Load() != 2 || counted.Load() != 1 {
+		t.Fatalf("attempts=%d counted=%d", attempts.Load(), counted.Load())
+	}
+}
+
+func Test_shouldRunTheSideEffectImmediatelyWhenNoBatchIsActive(t *testing.T) {
+	// GIVEN: a handler unit test calling the handler directly
+	ran := false
+
+	// WHEN: it registers a post-commit side effect
+	OnCommit(context.Background(), func() { ran = true })
+
+	// THEN: the side effect runs right away
+	if !ran {
+		t.Fatal("expected immediate execution")
 	}
 }
