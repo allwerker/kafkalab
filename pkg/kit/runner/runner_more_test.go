@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -67,7 +68,7 @@ func Test_shouldUseSafeDefaultsWhenOnlyTheEssentialsAreConfigured(t *testing.T) 
 
 	// THEN: the group is the service name and retries back off up to five seconds
 	if cfg.Group != "inventory" || cfg.Backoff(1) != 250*time.Millisecond || cfg.Backoff(100) != 5*time.Second ||
-		cfg.DedupWindow != time.Hour || cfg.JanitorEvery != time.Minute || cfg.Metrics == nil || cfg.Sleep == nil {
+		cfg.DedupWindow != time.Hour || cfg.JanitorEvery != time.Minute || cfg.PartitionConcurrency != 4 || cfg.Metrics == nil || cfg.Sleep == nil {
 		t.Fatalf("unexpected defaults %+v", cfg)
 	}
 }
@@ -257,5 +258,31 @@ func Test_shouldRunTheSideEffectImmediatelyWhenNoBatchIsActive(t *testing.T) {
 	// THEN: the side effect runs right away
 	if !ran {
 		t.Fatal("expected immediate execution")
+	}
+}
+
+func Test_shouldProcessSeveralPartitionsAtOnceWhenOrdersArriveOnAllPartitions(t *testing.T) {
+	// GIVEN: a handler that takes 300 ms per order and a service allowed to work on 3 partitions at once
+	h := newHarness(t)
+	var calls, inFlight, peak atomic.Int64
+	h.start(h.runner(HandlerFunc(func(ctx context.Context, _ pgx.Tx, _ Input) ([]Output, error) {
+		calls.Add(1)
+		n := inFlight.Add(1)
+		for p := peak.Load(); n > p && !peak.CompareAndSwap(p, n); p = peak.Load() {
+		}
+		time.Sleep(300 * time.Millisecond)
+		inFlight.Add(-1)
+		return nil, nil
+	}), func(c *Config) { c.PartitionConcurrency = 3 }))
+
+	// WHEN: orders land on every partition of orders.created
+	for i := 0; i < 12; i++ {
+		h.produce(order(fmt.Sprintf("o-par-%d", i), 1))
+	}
+	h.eventually("all processed", func() bool { return calls.Load() == 12 })
+
+	// THEN: partitions were processed in parallel, but never more than allowed
+	if peak.Load() < 2 || peak.Load() > 3 {
+		t.Fatalf("peak concurrency %d", peak.Load())
 	}
 }

@@ -234,8 +234,9 @@ func Test_shouldFailStartupWhenCatchUpIsInterrupted(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Fetches are answered only after the deadline, so catch-up cannot finish.
 	e.cluster.ControlKey(int16(kmsg.Fetch), func(kmsg.Request) (kmsg.Response, error, bool) {
+		e.cluster.KeepControl()
 		cancel()
-		return nil, nil, false
+		return nil, errors.New("broker unreachable"), true // no record ever arrives
 	})
 
 	// WHEN: the service starts

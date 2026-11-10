@@ -20,7 +20,11 @@ go-lint:
 .PHONY: go-test
 go-test: ## Go unit + integration tests (needs Docker for PostgreSQL), with race detector and coverage gate
 	@cd $(ROOT) && $(GO) test -race -count=1 -coverprofile=coverage.out $$($(GO) list $(GO_PKGS))
-	@cd $(ROOT) && $(TOOLS_BIN)/go-test-coverage --config .testcoverage.yml
+	@# go-test-coverage matches files by path suffix over the whole tree; agent worktrees under
+	@# .claude/ contain copies of the module, so the gate reads a clean copy of the sources.
+	@rm -rf $(ROOT)/.tools/cover-src && mkdir -p $(ROOT)/.tools/cover-src
+	@cd $(ROOT) && for d in go.mod $(GO_DIRS); do [ -e $$d ] && cp -r --parents $$d .tools/cover-src/; done; true
+	@cd $(ROOT) && $(TOOLS_BIN)/go-test-coverage --config .testcoverage.yml --source-dir .tools/cover-src
 
 .PHONY: lint test
 lint: go-lint
