@@ -1,0 +1,41 @@
+{{ required "strimziScrape is required" .Values.strimziScrape }}
+---
+# All lab Go services (and the controlboard): every pod labelled part-of=kafka-lab that exposes a
+# container port named "http" serves /metrics there. Strimzi overrides part-of on its pods
+# (strimzi-<cluster>), and platform pods (AKHQ, Karapace, Grafana) deliberately do not carry the label,
+# so nothing is scraped twice.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: lab-services
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: kafka-lab
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      relabelConfigs:
+        - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          targetLabel: service
+{{- if .Values.akhq }}
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: akhq
+spec:
+  namespaceSelector:
+    matchNames: [kafka]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: akhq
+  podMetricsEndpoints:
+    - port: management
+      path: /prometheus
+      relabelConfigs:
+        - targetLabel: service
+          replacement: akhq
+{{- end }}
