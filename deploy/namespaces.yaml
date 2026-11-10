@@ -1,0 +1,22 @@
+# All lab namespaces, applied with `kctl apply` before any Helm release (mk/40-deploy.mk).
+# Not owned by Helm on purpose: a release that owns a namespace deletes it with everything inside
+# when a later render drops it.
+apiVersion: v1
+kind: Namespace
+metadata: { name: kafka, labels: { app.kubernetes.io/part-of: kafka-lab } }
+---
+apiVersion: v1
+kind: Namespace
+metadata: { name: data, labels: { app.kubernetes.io/part-of: kafka-lab } }
+---
+apiVersion: v1
+kind: Namespace
+metadata: { name: monitoring, labels: { app.kubernetes.io/part-of: kafka-lab } }
+---
+apiVersion: v1
+kind: Namespace
+metadata: { name: commerce, labels: { app.kubernetes.io/part-of: kafka-lab } }
+---
+apiVersion: v1
+kind: Namespace
+metadata: { name: control, labels: { app.kubernetes.io/part-of: kafka-lab } }
