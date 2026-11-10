@@ -1,0 +1,4 @@
+# Filled by deploy/helmfile.d/43-lab-rules.yaml.gotmpl from the generated rule files
+# (monitoring/bundle/alerts/kafka-<profile>.yaml, monitoring/demo/alerts/business.yaml).
+# ruleFiles maps a VMRule name to the content of a Prometheus rule file (top-level key `groups`).
+ruleFiles: {}

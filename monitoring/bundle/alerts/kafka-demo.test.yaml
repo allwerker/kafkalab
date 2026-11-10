@@ -1,0 +1,730 @@
+# Unit tests for kafka-demo.yaml (GENERATED, run: make alerts-test).
+rule_files:
+  - kafka-demo.yaml
+evaluation_interval: 15s
+tests:
+  - name: KafkaBrokerDown fires
+    interval: 15s
+    input_series:
+      - series: up{kafka_cluster="lab",kafka_broker="0"}
+        values: "0x25"
+      - series: kafka_server_kafkaserver_brokerstate{kafka_cluster="lab",kafka_broker="0"}
+        values: 3x25
+    alert_rule_test:
+      - eval_time: 1m15s
+        alertname: KafkaBrokerDown
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-overview
+              kafka_broker: "0"
+              kafka_cluster: lab
+              severity: critical
+            exp_annotations:
+              description: The metrics endpoint of broker 0 cannot be scraped or the broker reports a state other than RUNNING. Its partitions fail over to other replicas; with min.insync.replicas a second loss stops writers.
+              runbook_url: docs/runbooks/KafkaBrokerDown.md
+              summary: Kafka broker 0 of cluster lab is down or not running
+  - name: KafkaBrokerDown stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: up{kafka_cluster="lab",kafka_broker="0"}
+        values: 1x25
+      - series: kafka_server_kafkaserver_brokerstate{kafka_cluster="lab",kafka_broker="0"}
+        values: 3x25
+    alert_rule_test:
+      - eval_time: 1m15s
+        alertname: KafkaBrokerDown
+        exp_alerts: []
+  - name: KafkaOfflinePartitions fires
+    interval: 15s
+    input_series:
+      - series: kafka_controller_kafkacontroller_offlinepartitionscount{kafka_cluster="lab",kafka_broker="0"}
+        values: 2x24
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: KafkaOfflinePartitions
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-overview
+              kafka_cluster: lab
+              severity: critical
+            exp_annotations:
+              description: 'At least one partition has no leader: neither producers nor consumers can use it. Usually all replicas of the partition are on brokers that are down, or unclean leader election is disabled and only out-of-sync replicas are left.'
+              runbook_url: docs/runbooks/KafkaOfflinePartitions.md
+              summary: Cluster lab has offline partitions
+  - name: KafkaOfflinePartitions stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_controller_kafkacontroller_offlinepartitionscount{kafka_cluster="lab",kafka_broker="0"}
+        values: "0x24"
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: KafkaOfflinePartitions
+        exp_alerts: []
+  - name: KafkaUnderMinISR fires
+    interval: 15s
+    input_series:
+      - series: kafka_server_replicamanager_underminisrpartitioncount{kafka_cluster="lab",kafka_broker="0"}
+        values: 3x25
+    alert_rule_test:
+      - eval_time: 1m15s
+        alertname: KafkaUnderMinISR
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-broker
+              kafka_cluster: lab
+              severity: critical
+            exp_annotations:
+              description: Producers with acks=all receive NOT_ENOUGH_REPLICAS for these partitions — writes fail. Find the broker(s) that are down or too slow to stay in sync.
+              runbook_url: docs/runbooks/KafkaUnderMinISR.md
+              summary: Partitions of cluster lab are below min.insync.replicas
+  - name: KafkaUnderMinISR stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_server_replicamanager_underminisrpartitioncount{kafka_cluster="lab",kafka_broker="0"}
+        values: "0x25"
+    alert_rule_test:
+      - eval_time: 1m15s
+        alertname: KafkaUnderMinISR
+        exp_alerts: []
+  - name: KafkaUnderReplicatedPartitions fires
+    interval: 15s
+    input_series:
+      - series: kafka_server_replicamanager_underreplicatedpartitions{kafka_cluster="lab",kafka_broker="0"}
+        values: 4x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaUnderReplicatedPartitions
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-broker
+              kafka_broker: "0"
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: Followers of partitions led by broker 0 (cluster lab) are not in sync for a sustained period. Redundancy is reduced; check the follower brokers' disk, network and GC.
+              runbook_url: docs/runbooks/KafkaUnderReplicatedPartitions.md
+              summary: Broker 0 leads under-replicated partitions
+  - name: KafkaUnderReplicatedPartitions stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_server_replicamanager_underreplicatedpartitions{kafka_cluster="lab",kafka_broker="0"}
+        values: "0x28"
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaUnderReplicatedPartitions
+        exp_alerts: []
+  - name: KafkaProduceLatencyHigh fires
+    interval: 15s
+    input_series:
+      - series: kafka_network_requestmetrics_totaltimems{kafka_cluster="lab",kafka_broker="0",request="Produce",quantile="0.99"}
+        values: 900x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaProduceLatencyHigh
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-broker
+              kafka_broker: "0"
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: 'The broker needs more than 500 ms for 1 % of produce requests. Open the request time breakdown: request queue = handler saturation, local = disk, remote = slow followers (acks=all).'
+              runbook_url: docs/runbooks/KafkaProduceLatencyHigh.md
+              summary: Produce p99 latency on broker 0 is above 500 ms
+  - name: KafkaProduceLatencyHigh stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_network_requestmetrics_totaltimems{kafka_cluster="lab",kafka_broker="0",request="Produce",quantile="0.99"}
+        values: 40x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaProduceLatencyHigh
+        exp_alerts: []
+  - name: KafkaFetchLatencyHigh fires
+    interval: 15s
+    input_series:
+      - series: kafka_network_requestmetrics_localtimems{kafka_cluster="lab",kafka_broker="0",request="FetchConsumer",quantile="0.99"}
+        values: 2500x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaFetchLatencyHigh
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-broker
+              kafka_broker: "0"
+              kafka_cluster: lab
+              request: FetchConsumer
+              severity: warning
+            exp_annotations:
+              description: Reading data for fetch requests takes the leader more than a second (local phase; long-poll waiting is excluded). Consumers or followers read from disk instead of the page cache, or the disk is saturated.
+              runbook_url: docs/runbooks/KafkaFetchLatencyHigh.md
+              summary: FetchConsumer local time p99 on broker 0 is above 1 s
+  - name: KafkaFetchLatencyHigh stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_network_requestmetrics_localtimems{kafka_cluster="lab",kafka_broker="0",request="FetchConsumer",quantile="0.99"}
+        values: 5x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaFetchLatencyHigh
+        exp_alerts: []
+  - name: KafkaRequestHandlerSaturated fires
+    interval: 15s
+    input_series:
+      - series: kafka_server_kafkarequesthandlerpool_requesthandleravgidlepercent_count{kafka_cluster="lab",kafka_broker="0"}
+        values: 0+1500000000x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaRequestHandlerSaturated
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-broker
+              kafka_broker: "0"
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: Requests queue up for an I/O thread and latency grows. Add brokers, raise num.io.threads (if CPU is available) or reduce the request rate (bigger batches, fewer Metadata requests).
+              runbook_url: docs/runbooks/KafkaRequestHandlerSaturated.md
+              summary: Request handler threads of broker 0 are more than 80 % busy
+  - name: KafkaRequestHandlerSaturated stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_server_kafkarequesthandlerpool_requesthandleravgidlepercent_count{kafka_cluster="lab",kafka_broker="0"}
+        values: 0+13500000000x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaRequestHandlerSaturated
+        exp_alerts: []
+  - name: KafkaJMXScrapeSlow fires
+    interval: 15s
+    input_series:
+      - series: jmx_scrape_duration_seconds{kafka_cluster="lab",kafka_broker="0"}
+        values: 6x52
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: KafkaJMXScrapeSlow
+        exp_alerts:
+          - exp_labels:
+              component: platform
+              dashboard: lab-monitoring
+              kafka_broker: "0"
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: 'The JMX exporter runs inside the broker JVM; slow scrapes cost broker CPU and hold MBean server locks. Check the allowlist (docs/metrics-performance-impact.md): new per-topic or per-client beans, or an overloaded broker.'
+              runbook_url: docs/runbooks/KafkaJMXScrapeSlow.md
+              summary: JMX scrape of broker 0 takes more than 25 % of the 15 s scrape interval
+  - name: KafkaJMXScrapeSlow stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: jmx_scrape_duration_seconds{kafka_cluster="lab",kafka_broker="0"}
+        values: 0.4x52
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: KafkaJMXScrapeSlow
+        exp_alerts: []
+  - name: KafkaNoActiveController fires
+    interval: 15s
+    input_series:
+      - series: kafka_controller_kafkacontroller_activecontrollercount{kafka_cluster="lab",kafka_broker="0"}
+        values: "0x25"
+    alert_rule_test:
+      - eval_time: 1m15s
+        alertname: KafkaNoActiveController
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-kraft
+              kafka_cluster: lab
+              severity: critical
+            exp_annotations:
+              description: 'No node acts as active controller: metadata is frozen (no leader elections, no topic changes, brokers cannot register). The controller quorum has lost its majority or cannot elect a leader.'
+              runbook_url: docs/runbooks/KafkaNoActiveController.md
+              summary: Cluster lab has no active KRaft controller
+  - name: KafkaNoActiveController stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_controller_kafkacontroller_activecontrollercount{kafka_cluster="lab",kafka_broker="0"}
+        values: 1x25
+    alert_rule_test:
+      - eval_time: 1m15s
+        alertname: KafkaNoActiveController
+        exp_alerts: []
+  - name: KafkaMultipleActiveControllers fires
+    interval: 15s
+    input_series:
+      - series: kafka_controller_kafkacontroller_activecontrollercount{kafka_cluster="lab",kafka_broker="0"}
+        values: 1x26
+      - series: kafka_controller_kafkacontroller_activecontrollercount{kafka_cluster="lab",kafka_broker="1"}
+        values: 1x26
+    alert_rule_test:
+      - eval_time: 1m30s
+        alertname: KafkaMultipleActiveControllers
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-kraft
+              kafka_cluster: lab
+              severity: critical
+            exp_annotations:
+              description: Several nodes believe they are the active controller for longer than an election takes. Usually a network partition between controller nodes; check the KRaft dashboard and controller logs.
+              runbook_url: docs/runbooks/KafkaMultipleActiveControllers.md
+              summary: Cluster lab reports more than one active controller
+  - name: KafkaControllerElectionsFlapping fires
+    interval: 15s
+    input_series:
+      - series: kafka_controller_kafkacontroller_newactivecontrollerscount{kafka_cluster="lab",kafka_broker="0"}
+        values: 0+0.05x84
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KafkaControllerElectionsFlapping
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-kraft
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: 'Frequent controller elections pause metadata changes each time. Typical causes: GC pauses or CPU starvation on controller nodes, network flakiness, slow metadata log disks.'
+              runbook_url: docs/runbooks/KafkaControllerElectionsFlapping.md
+              summary: KRaft controller of cluster lab changed more than twice in 15 minutes
+  - name: KafkaControllerElectionsFlapping stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_controller_kafkacontroller_newactivecontrollerscount{kafka_cluster="lab",kafka_broker="0"}
+        values: 3x84
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KafkaControllerElectionsFlapping
+        exp_alerts: []
+  - name: KafkaQuorumVoterUnreachable fires
+    interval: 15s
+    input_series:
+      - series: kafka_server_raftmetrics_number_unknown_voter_connections{kafka_cluster="lab",kafka_broker="0"}
+        values: 1x26
+    alert_rule_test:
+      - eval_time: 1m30s
+        alertname: KafkaQuorumVoterUnreachable
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-kraft
+              kafka_broker: "0"
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: 'The KRaft quorum on cluster lab has reduced fault tolerance: one more voter failure can stop metadata processing.'
+              runbook_url: docs/runbooks/KafkaQuorumVoterUnreachable.md
+              summary: Node 0 cannot reach a KRaft voter
+  - name: KafkaQuorumVoterUnreachable stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_server_raftmetrics_number_unknown_voter_connections{kafka_cluster="lab",kafka_broker="0"}
+        values: "0x26"
+    alert_rule_test:
+      - eval_time: 1m30s
+        alertname: KafkaQuorumVoterUnreachable
+        exp_alerts: []
+  - name: KafkaQuorumCommitSlow fires
+    interval: 15s
+    input_series:
+      - series: kafka_server_raftmetrics_commit_latency_avg{kafka_cluster="lab",kafka_broker="0"}
+        values: 1500x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaQuorumCommitSlow
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-kraft
+              kafka_broker: "0"
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: Committing metadata records to a majority of voters is slow. Leader elections and topic changes are delayed; check the controller nodes' disks and network.
+              runbook_url: docs/runbooks/KafkaQuorumCommitSlow.md
+              summary: KRaft metadata commits on node 0 take more than 1 s
+  - name: KafkaQuorumCommitSlow stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_server_raftmetrics_commit_latency_avg{kafka_cluster="lab",kafka_broker="0"}
+        values: 8x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaQuorumCommitSlow
+        exp_alerts: []
+  - name: KafkaBrokerMetadataLagging fires
+    interval: 15s
+    input_series:
+      - series: kafka_server_brokermetadatametrics_last_applied_record_lag_ms{kafka_cluster="lab",kafka_broker="0"}
+        values: 60000x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaBrokerMetadataLagging
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-kraft
+              kafka_broker: "0"
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: 'The broker lags behind the KRaft metadata log (Kafka writes a no-op record every 500 ms, so the lag is normally below a second). It serves stale leadership information: clients see NOT_LEADER errors and timeouts.'
+              runbook_url: docs/runbooks/KafkaBrokerMetadataLagging.md
+              summary: Broker 0 applies metadata more than 30 s late
+  - name: KafkaBrokerMetadataLagging stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_server_brokermetadatametrics_last_applied_record_lag_ms{kafka_cluster="lab",kafka_broker="0"}
+        values: 300x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaBrokerMetadataLagging
+        exp_alerts: []
+  - name: KafkaBrokerFenced fires
+    interval: 15s
+    input_series:
+      - series: kafka_controller_kafkacontroller_fencedbrokercount{kafka_cluster="lab",kafka_broker="0"}
+        values: 1x26
+    alert_rule_test:
+      - eval_time: 1m30s
+        alertname: KafkaBrokerFenced
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-kraft
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: The active controller fenced at least one broker because its heartbeats stopped. A fenced broker leads no partitions; if it is running, it cannot reach the controller quorum.
+              runbook_url: docs/runbooks/KafkaBrokerFenced.md
+              summary: Cluster lab has fenced brokers
+  - name: KafkaBrokerFenced stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kafka_controller_kafkacontroller_fencedbrokercount{kafka_cluster="lab",kafka_broker="0"}
+        values: "0x26"
+    alert_rule_test:
+      - eval_time: 1m30s
+        alertname: KafkaBrokerFenced
+        exp_alerts: []
+  - name: KafkaConsumerLagGrowing fires
+    interval: 15s
+    input_series:
+      - series: kminion_kafka_consumer_group_topic_lag{kafka_cluster="lab",group_id="billing",topic_name="orders"}
+        values: 0+20x72
+      - series: kminion_kafka_consumer_group_topic_offset_sum{kafka_cluster="lab",group_id="billing",topic_name="orders"}
+        values: 0+15x72
+    alert_rule_test:
+      - eval_time: 13m
+        alertname: KafkaConsumerLagGrowing
+        exp_alerts:
+          - exp_labels:
+              component: consumer
+              dashboard: kafka-lag
+              group_id: billing
+              kafka_cluster: lab
+              severity: warning
+              topic_name: orders
+            exp_annotations:
+              description: 'The lag of group billing on topic orders keeps growing and the group is more than 2 minutes behind. The consumers are slower than the producers: scale out (up to the partition count), speed up processing, or look for a hot partition.'
+              runbook_url: docs/runbooks/KafkaConsumerLagGrowing.md
+              summary: Consumer group billing falls behind on orders
+  - name: KafkaConsumerLagGrowing stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kminion_kafka_consumer_group_topic_lag{kafka_cluster="lab",group_id="billing",topic_name="orders"}
+        values: 50x72
+      - series: kminion_kafka_consumer_group_topic_offset_sum{kafka_cluster="lab",group_id="billing",topic_name="orders"}
+        values: 0+150x72
+    alert_rule_test:
+      - eval_time: 13m
+        alertname: KafkaConsumerLagGrowing
+        exp_alerts: []
+  - name: KafkaConsumerStalled fires
+    interval: 15s
+    input_series:
+      - series: kminion_kafka_consumer_group_topic_lag{kafka_cluster="lab",group_id="billing",topic_name="orders"}
+        values: 500x48
+      - series: kminion_kafka_consumer_group_topic_offset_sum{kafka_cluster="lab",group_id="billing",topic_name="orders"}
+        values: 1000x48
+      - series: kminion_kafka_consumer_group_members{kafka_cluster="lab",group_id="billing"}
+        values: 2x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaConsumerStalled
+        exp_alerts:
+          - exp_labels:
+              component: consumer
+              dashboard: kafka-lag
+              group_id: billing
+              kafka_cluster: lab
+              severity: warning
+              topic_name: orders
+            exp_annotations:
+              description: Group billing has members and lag on orders but committed no progress for 5 minutes. The application is stuck (blocked handler, poison message, paused consumer) while still holding its partitions.
+              runbook_url: docs/runbooks/KafkaConsumerStalled.md
+              summary: Consumer group billing is stalled on orders
+  - name: KafkaConsumerStalled stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kminion_kafka_consumer_group_topic_lag{kafka_cluster="lab",group_id="billing",topic_name="orders"}
+        values: 500x48
+      - series: kminion_kafka_consumer_group_topic_offset_sum{kafka_cluster="lab",group_id="billing",topic_name="orders"}
+        values: 0+100x48
+      - series: kminion_kafka_consumer_group_members{kafka_cluster="lab",group_id="billing"}
+        values: 2x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaConsumerStalled
+        exp_alerts: []
+  - name: KafkaProbeFailing fires
+    interval: 15s
+    input_series:
+      - series: kminion_end_to_end_messages_produced_total{kafka_cluster="lab",partition_id="0"}
+        values: 0+30x48
+      - series: kminion_end_to_end_messages_received_total{kafka_cluster="lab",partition_id="0"}
+        values: 0+10x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaProbeFailing
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-e2e
+              kafka_cluster: lab
+              severity: critical
+            exp_annotations:
+              description: 'Less than 90 % of KMinion''s probe messages come back. Applications are very likely affected as well: check offline / under-min-ISR partitions and broker availability.'
+              runbook_url: docs/runbooks/KafkaProbeFailing.md
+              summary: End-to-end probe of cluster lab loses messages
+  - name: KafkaProbeFailing stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kminion_end_to_end_messages_produced_total{kafka_cluster="lab",partition_id="0"}
+        values: 0+30x48
+      - series: kminion_end_to_end_messages_received_total{kafka_cluster="lab",partition_id="0"}
+        values: 0+30x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaProbeFailing
+        exp_alerts: []
+  - name: KafkaProbeSlow fires
+    interval: 15s
+    input_series:
+      - series: kminion_end_to_end_roundtrip_latency_seconds_bucket{kafka_cluster="lab",partition_id="0",le="1"}
+        values: "0x48"
+      - series: kminion_end_to_end_roundtrip_latency_seconds_bucket{kafka_cluster="lab",partition_id="0",le="5"}
+        values: 0+10x48
+      - series: kminion_end_to_end_roundtrip_latency_seconds_bucket{kafka_cluster="lab",partition_id="0",le="+Inf"}
+        values: 0+10x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaProbeSlow
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-e2e
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: Producing (acks=all) and consuming a probe message takes more than 2 s for 1 % of the probes. Look for slow produce requests, ISR problems and GC pauses.
+              runbook_url: docs/runbooks/KafkaProbeSlow.md
+              summary: End-to-end probe roundtrip p99 of cluster lab is above 2 s
+  - name: KafkaProbeSlow stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kminion_end_to_end_roundtrip_latency_seconds_bucket{kafka_cluster="lab",partition_id="0",le="1"}
+        values: 0+10x48
+      - series: kminion_end_to_end_roundtrip_latency_seconds_bucket{kafka_cluster="lab",partition_id="0",le="5"}
+        values: 0+10x48
+      - series: kminion_end_to_end_roundtrip_latency_seconds_bucket{kafka_cluster="lab",partition_id="0",le="+Inf"}
+        values: 0+10x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaProbeSlow
+        exp_alerts: []
+  - name: KMinionScrapeFailing fires
+    interval: 15s
+    input_series:
+      - series: kminion_exporter_up{kafka_cluster="lab"}
+        values: "0x28"
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KMinionScrapeFailing
+        exp_alerts:
+          - exp_labels:
+              component: platform
+              dashboard: kafka-lag
+              kafka_cluster: lab
+              severity: warning
+            exp_annotations:
+              description: 'KMinion''s last scrape of the Kafka admin API failed: lag, topic size and probe metrics are stale. Lag alerts cannot fire while this lasts.'
+              runbook_url: docs/runbooks/KMinionScrapeFailing.md
+              summary: KMinion cannot read cluster lab
+  - name: KMinionScrapeFailing stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kminion_exporter_up{kafka_cluster="lab"}
+        values: 1x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KMinionScrapeFailing
+        exp_alerts: []
+  - name: KafkaHeapAfterGCHigh fires
+    interval: 15s
+    input_series:
+      - series: jvm_memory_pool_collection_used_bytes{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0",pool="old"}
+        values: 900x28
+      - series: jvm_memory_max_bytes{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0",area="heap"}
+        values: 1000x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaHeapAfterGCHigh
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-jvm
+              kafka_broker: "0"
+              kafka_cluster: lab
+              namespace: kafka
+              pod: kafka-0
+              severity: warning
+            exp_annotations:
+              description: 'Live data no longer fits comfortably into the heap of kafka-0: the JVM collects constantly, pauses grow and an OutOfMemoryError is near. Raise -Xmx (and the memory limit) or reduce partitions/connections per broker.'
+              runbook_url: docs/runbooks/KafkaHeapAfterGCHigh.md
+              summary: Broker 0 keeps more than 80 % of its heap after GC
+  - name: KafkaHeapAfterGCHigh stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: jvm_memory_pool_collection_used_bytes{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0",pool="old"}
+        values: 300x28
+      - series: jvm_memory_max_bytes{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0",area="heap"}
+        values: 1000x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaHeapAfterGCHigh
+        exp_alerts: []
+  - name: KafkaGCTimeHigh fires
+    interval: 15s
+    input_series:
+      - series: jvm_gc_collection_seconds_sum{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0",gc="G1 Young Generation"}
+        values: 0+3x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaGCTimeHigh
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-jvm
+              kafka_broker: "0"
+              kafka_cluster: lab
+              namespace: kafka
+              pod: kafka-0
+              severity: warning
+            exp_annotations:
+              description: 'Stop-the-world garbage collection on kafka-0 takes more than 10 % of wall-clock time: request latency rises, ISR shrinks and session timeouts follow. Check heap after GC and allocation rate.'
+              runbook_url: docs/runbooks/KafkaGCTimeHigh.md
+              summary: Broker 0 spends more than 10 % of its time in GC pauses
+  - name: KafkaGCTimeHigh stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: jvm_gc_collection_seconds_sum{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0",gc="G1 Young Generation"}
+        values: 0+0.05x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: KafkaGCTimeHigh
+        exp_alerts: []
+  - name: KafkaDiskFillingUp fires
+    interval: 15s
+    input_series:
+      - series: kubelet_volume_stats_available_bytes{namespace="kafka",persistentvolumeclaim="data-kafka-0"}
+        values: 20000-10x284
+      - series: kubelet_volume_stats_capacity_bytes{namespace="kafka",persistentvolumeclaim="data-kafka-0"}
+        values: 100000x284
+      - series: kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="kafka",pod="kafka-0",persistentvolumeclaim="data-kafka-0"}
+        values: 1x284
+      - series: kafka_server_kafkaserver_brokerstate{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0"}
+        values: 3x284
+    alert_rule_test:
+      - eval_time: 1h6m
+        alertname: KafkaDiskFillingUp
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-pods
+              kafka_broker: "0"
+              kafka_cluster: lab
+              namespace: kafka
+              persistentvolumeclaim: data-kafka-0
+              pod: kafka-0
+              severity: warning
+            exp_annotations:
+              description: 'At the growth rate of the last 6 hours the data volume of broker 0 (kafka-0) runs out of space within a day. A full log dir takes the broker offline: reduce retention, add disk or rebalance partitions.'
+              runbook_url: docs/runbooks/KafkaDiskFillingUp.md
+              summary: Kafka volume data-kafka-0 will be full within 24 h
+  - name: KafkaDiskFillingUp stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kubelet_volume_stats_available_bytes{namespace="kafka",persistentvolumeclaim="data-kafka-0"}
+        values: 80000x284
+      - series: kubelet_volume_stats_capacity_bytes{namespace="kafka",persistentvolumeclaim="data-kafka-0"}
+        values: 100000x284
+      - series: kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="kafka",pod="kafka-0",persistentvolumeclaim="data-kafka-0"}
+        values: 1x284
+      - series: kafka_server_kafkaserver_brokerstate{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0"}
+        values: 3x284
+    alert_rule_test:
+      - eval_time: 1h6m
+        alertname: KafkaDiskFillingUp
+        exp_alerts: []
+  - name: KafkaDiskAlmostFull fires
+    interval: 15s
+    input_series:
+      - series: kubelet_volume_stats_available_bytes{namespace="kafka",persistentvolumeclaim="data-kafka-0"}
+        values: 5000x28
+      - series: kubelet_volume_stats_capacity_bytes{namespace="kafka",persistentvolumeclaim="data-kafka-0"}
+        values: 100000x28
+      - series: kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="kafka",pod="kafka-0",persistentvolumeclaim="data-kafka-0"}
+        values: 1x28
+      - series: kafka_server_kafkaserver_brokerstate{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0"}
+        values: 3x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaDiskAlmostFull
+        exp_alerts:
+          - exp_labels:
+              component: kafka
+              dashboard: kafka-pods
+              kafka_broker: "0"
+              kafka_cluster: lab
+              namespace: kafka
+              persistentvolumeclaim: data-kafka-0
+              pod: kafka-0
+              severity: critical
+            exp_annotations:
+              description: Broker 0 (kafka-0) is about to run out of disk. When the log dir is full the broker marks it offline and its partitions become unavailable on this replica.
+              runbook_url: docs/runbooks/KafkaDiskAlmostFull.md
+              summary: Kafka volume data-kafka-0 has less than 10 % free space
+  - name: KafkaDiskAlmostFull stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kubelet_volume_stats_available_bytes{namespace="kafka",persistentvolumeclaim="data-kafka-0"}
+        values: 50000x28
+      - series: kubelet_volume_stats_capacity_bytes{namespace="kafka",persistentvolumeclaim="data-kafka-0"}
+        values: 100000x28
+      - series: kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="kafka",pod="kafka-0",persistentvolumeclaim="data-kafka-0"}
+        values: 1x28
+      - series: kafka_server_kafkaserver_brokerstate{kafka_cluster="lab",kafka_broker="0",namespace="kafka",pod="kafka-0"}
+        values: 3x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: KafkaDiskAlmostFull
+        exp_alerts: []

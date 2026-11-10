@@ -16,7 +16,7 @@ images: ## Build and push all Go service images; writes .tools/image-tags.yaml f
 	  CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -trimpath -ldflags="-s -w" -o $(ROOT)/dist/$$name $$dir || exit 1; \
 	  tag=$$(sha256sum $(ROOT)/dist/$$name | cut -c1-12); \
 	  if ! curl -sf -o /dev/null http://$(PUSH_REGISTRY)/v2/$$name/manifests/$$tag -H 'Accept: application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.manifest.v1+json'; then \
-	    docker build -q -f $(ROOT)/deploy/images/Dockerfile.go --build-arg BIN=$$name -t $(PUSH_REGISTRY)/$$name:$$tag $(ROOT)/dist >/dev/null || exit 1; \
+	    docker build -q -f $(ROOT)/deploy/images/Dockerfile.service --build-arg BIN=$$name -t $(PUSH_REGISTRY)/$$name:$$tag $(ROOT)/dist >/dev/null || exit 1; \
 	    docker push -q $(PUSH_REGISTRY)/$$name:$$tag >/dev/null || exit 1; \
 	    echo "  pushed $$name:$$tag"; \
 	  fi; \

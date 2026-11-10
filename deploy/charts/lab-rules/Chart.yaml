@@ -1,0 +1,5 @@
+apiVersion: v2
+name: lab-rules
+description: Kafka bundle and lab business alerting/recording rules as VMRule objects (one per generated rule file)
+type: application
+version: 0.1.0

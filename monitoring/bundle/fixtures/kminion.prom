@@ -1,0 +1,688 @@
+# HELP go_gc_duration_seconds A summary of the wall-time pause (stop-the-world) duration in garbage collection cycles.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 8.1508e-05
+go_gc_duration_seconds{quantile="0.25"} 0.000568903
+go_gc_duration_seconds{quantile="0.5"} 0.003193705
+go_gc_duration_seconds{quantile="0.75"} 0.011363611
+go_gc_duration_seconds{quantile="1"} 0.084543773
+go_gc_duration_seconds_sum 3.614708055
+go_gc_duration_seconds_count 540
+# HELP go_gc_gogc_percent Heap size target percentage configured by the user, otherwise 100. This value is set by the GOGC environment variable, and the runtime/debug.SetGCPercent function. Sourced from /gc/gogc:percent.
+# TYPE go_gc_gogc_percent gauge
+go_gc_gogc_percent 100
+# HELP go_gc_gomemlimit_bytes Go runtime memory limit configured by the user, otherwise math.MaxInt64. This value is set by the GOMEMLIMIT environment variable, and the runtime/debug.SetMemoryLimit function. Sourced from /gc/gomemlimit:bytes.
+# TYPE go_gc_gomemlimit_bytes gauge
+go_gc_gomemlimit_bytes 9.223372036854776e+18
+# HELP go_goroutines Number of goroutines that currently exist.
+# TYPE go_goroutines gauge
+go_goroutines 68
+# HELP go_info Information about the Go environment.
+# TYPE go_info gauge
+go_info{version="go1.26.10"} 1
+# HELP go_memstats_alloc_bytes Number of bytes allocated in heap and currently in use. Equals to /memory/classes/heap/objects:bytes.
+# TYPE go_memstats_alloc_bytes gauge
+go_memstats_alloc_bytes 2.326216e+06
+# HELP go_memstats_alloc_bytes_total Total number of bytes allocated in heap until now, even if released already. Equals to /gc/heap/allocs:bytes.
+# TYPE go_memstats_alloc_bytes_total counter
+go_memstats_alloc_bytes_total 6.06413424e+08
+# HELP go_memstats_buck_hash_sys_bytes Number of bytes used by the profiling bucket hash table. Equals to /memory/classes/profiling/buckets:bytes.
+# TYPE go_memstats_buck_hash_sys_bytes gauge
+go_memstats_buck_hash_sys_bytes 1.444611e+06
+# HELP go_memstats_frees_total Total number of heap objects frees. Equals to /gc/heap/frees:objects + /gc/heap/tiny/allocs:objects.
+# TYPE go_memstats_frees_total counter
+go_memstats_frees_total 5.269476e+06
+# HELP go_memstats_gc_sys_bytes Number of bytes used for garbage collection system metadata. Equals to /memory/classes/metadata/other:bytes.
+# TYPE go_memstats_gc_sys_bytes gauge
+go_memstats_gc_sys_bytes 3.290352e+06
+# HELP go_memstats_heap_alloc_bytes Number of heap bytes allocated and currently in use, same as go_memstats_alloc_bytes. Equals to /memory/classes/heap/objects:bytes.
+# TYPE go_memstats_heap_alloc_bytes gauge
+go_memstats_heap_alloc_bytes 2.326216e+06
+# HELP go_memstats_heap_idle_bytes Number of heap bytes waiting to be used. Equals to /memory/classes/heap/released:bytes + /memory/classes/heap/free:bytes.
+# TYPE go_memstats_heap_idle_bytes gauge
+go_memstats_heap_idle_bytes 1.0141696e+07
+# HELP go_memstats_heap_inuse_bytes Number of heap bytes that are in use. Equals to /memory/classes/heap/objects:bytes + /memory/classes/heap/unused:bytes
+# TYPE go_memstats_heap_inuse_bytes gauge
+go_memstats_heap_inuse_bytes 4.99712e+06
+# HELP go_memstats_heap_objects Number of currently allocated objects. Equals to /gc/heap/objects:objects.
+# TYPE go_memstats_heap_objects gauge
+go_memstats_heap_objects 8178
+# HELP go_memstats_heap_released_bytes Number of heap bytes released to OS. Equals to /memory/classes/heap/released:bytes.
+# TYPE go_memstats_heap_released_bytes gauge
+go_memstats_heap_released_bytes 9.224192e+06
+# HELP go_memstats_heap_sys_bytes Number of heap bytes obtained from system. Equals to /memory/classes/heap/objects:bytes + /memory/classes/heap/unused:bytes + /memory/classes/heap/released:bytes + /memory/classes/heap/free:bytes.
+# TYPE go_memstats_heap_sys_bytes gauge
+go_memstats_heap_sys_bytes 1.5138816e+07
+# HELP go_memstats_last_gc_time_seconds Number of seconds since 1970 of last garbage collection.
+# TYPE go_memstats_last_gc_time_seconds gauge
+go_memstats_last_gc_time_seconds 1.7943454987815905e+09
+# HELP go_memstats_mallocs_total Total number of heap objects allocated, both live and gc-ed. Semantically a counter version for go_memstats_heap_objects gauge. Equals to /gc/heap/allocs:objects + /gc/heap/tiny/allocs:objects.
+# TYPE go_memstats_mallocs_total counter
+go_memstats_mallocs_total 5.277654e+06
+# HELP go_memstats_mcache_inuse_bytes Number of bytes in use by mcache structures. Equals to /memory/classes/metadata/mcache/inuse:bytes.
+# TYPE go_memstats_mcache_inuse_bytes gauge
+go_memstats_mcache_inuse_bytes 18368
+# HELP go_memstats_mcache_sys_bytes Number of bytes used for mcache structures obtained from system. Equals to /memory/classes/metadata/mcache/inuse:bytes + /memory/classes/metadata/mcache/free:bytes.
+# TYPE go_memstats_mcache_sys_bytes gauge
+go_memstats_mcache_sys_bytes 32144
+# HELP go_memstats_mspan_inuse_bytes Number of bytes in use by mspan structures. Equals to /memory/classes/metadata/mspan/inuse:bytes.
+# TYPE go_memstats_mspan_inuse_bytes gauge
+go_memstats_mspan_inuse_bytes 171680
+# HELP go_memstats_mspan_sys_bytes Number of bytes used for mspan structures obtained from system. Equals to /memory/classes/metadata/mspan/inuse:bytes + /memory/classes/metadata/mspan/free:bytes.
+# TYPE go_memstats_mspan_sys_bytes gauge
+go_memstats_mspan_sys_bytes 212160
+# HELP go_memstats_next_gc_bytes Number of heap bytes when next garbage collection will take place. Equals to /gc/heap/goal:bytes.
+# TYPE go_memstats_next_gc_bytes gauge
+go_memstats_next_gc_bytes 4.939002e+06
+# HELP go_memstats_other_sys_bytes Number of bytes used for other system allocations. Equals to /memory/classes/other:bytes.
+# TYPE go_memstats_other_sys_bytes gauge
+go_memstats_other_sys_bytes 1.728197e+06
+# HELP go_memstats_stack_inuse_bytes Number of bytes obtained from system for stack allocator in non-CGO environments. Equals to /memory/classes/heap/stacks:bytes.
+# TYPE go_memstats_stack_inuse_bytes gauge
+go_memstats_stack_inuse_bytes 1.6384e+06
+# HELP go_memstats_stack_sys_bytes Number of bytes obtained from system for stack allocator. Equals to /memory/classes/heap/stacks:bytes + /memory/classes/os-stacks:bytes.
+# TYPE go_memstats_stack_sys_bytes gauge
+go_memstats_stack_sys_bytes 1.6384e+06
+# HELP go_memstats_sys_bytes Number of bytes obtained from system. Equals to /memory/classes/total:byte.
+# TYPE go_memstats_sys_bytes gauge
+go_memstats_sys_bytes 2.348468e+07
+# HELP go_sched_gomaxprocs_threads The current runtime.GOMAXPROCS setting, or the number of operating system threads that can execute user-level Go code simultaneously. Sourced from /sched/gomaxprocs:threads.
+# TYPE go_sched_gomaxprocs_threads gauge
+go_sched_gomaxprocs_threads 8
+# HELP go_threads Number of OS threads created.
+# TYPE go_threads gauge
+go_threads 16
+# HELP kminion_end_to_end_messages_lost_total Number of messages that have been produced successfully but not received within the configured SLA duration
+# TYPE kminion_end_to_end_messages_lost_total counter
+kminion_end_to_end_messages_lost_total{partition_id="0"} 85
+kminion_end_to_end_messages_lost_total{partition_id="1"} 148
+kminion_end_to_end_messages_lost_total{partition_id="2"} 112
+# HELP kminion_end_to_end_messages_produced_failed_total Number of messages failed to produce to Kafka because of a timeout or failure
+# TYPE kminion_end_to_end_messages_produced_failed_total counter
+kminion_end_to_end_messages_produced_failed_total{partition_id="0"} 85
+kminion_end_to_end_messages_produced_failed_total{partition_id="1"} 152
+kminion_end_to_end_messages_produced_failed_total{partition_id="2"} 66
+# HELP kminion_end_to_end_messages_produced_in_flight Number of messages that kminion's end-to-end test produced but has not received an answer for yet
+# TYPE kminion_end_to_end_messages_produced_in_flight gauge
+kminion_end_to_end_messages_produced_in_flight{partition_id="0"} 0
+kminion_end_to_end_messages_produced_in_flight{partition_id="1"} 0
+kminion_end_to_end_messages_produced_in_flight{partition_id="2"} 0
+# HELP kminion_end_to_end_messages_produced_total Number of all messages produced to Kafka. This counter will be incremented when we receive a response (failure/timeout or success) from Kafka
+# TYPE kminion_end_to_end_messages_produced_total counter
+kminion_end_to_end_messages_produced_total{partition_id="0"} 5420
+kminion_end_to_end_messages_produced_total{partition_id="1"} 5420
+kminion_end_to_end_messages_produced_total{partition_id="2"} 5420
+# HELP kminion_end_to_end_messages_received_total Number of *matching* messages kminion received. Every roundtrip message has a minionID (randomly generated on startup) and a timestamp. Kminion only considers a message a match if it it arrives within the configured roundtrip SLA (and it matches the minionID)
+# TYPE kminion_end_to_end_messages_received_total counter
+kminion_end_to_end_messages_received_total{partition_id="0"} 5299
+kminion_end_to_end_messages_received_total{partition_id="1"} 5235
+kminion_end_to_end_messages_received_total{partition_id="2"} 5296
+# HELP kminion_end_to_end_offset_commit_latency_seconds Time kafka took to respond to kminion's offset commit
+# TYPE kminion_end_to_end_offset_commit_latency_seconds histogram
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="0.005"} 66
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="0.01"} 182
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="0.02"} 286
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="0.04"} 398
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="0.08"} 475
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="0.16"} 513
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="0.32"} 522
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="0.64"} 524
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="1.28"} 532
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="2.56"} 539
+kminion_end_to_end_offset_commit_latency_seconds_bucket{coordinator_id="2",le="+Inf"} 542
+kminion_end_to_end_offset_commit_latency_seconds_sum{coordinator_id="2"} 48.27647489399999
+kminion_end_to_end_offset_commit_latency_seconds_count{coordinator_id="2"} 542
+# HELP kminion_end_to_end_offset_commits_failed_total Number of offset commits that returned an error or timed out
+# TYPE kminion_end_to_end_offset_commits_failed_total counter
+kminion_end_to_end_offset_commits_failed_total{coordinator_id="2",reason="OFFSET_COMMIT_SLA_EXCEEDED"} 10
+# HELP kminion_end_to_end_offset_commits_total Counts how many times kminions end-to-end test has committed offsets
+# TYPE kminion_end_to_end_offset_commits_total counter
+kminion_end_to_end_offset_commits_total{coordinator_id="2"} 542
+# HELP kminion_end_to_end_produce_latency_seconds Time until we received an ack for a produced message
+# TYPE kminion_end_to_end_produce_latency_seconds histogram
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="0.005"} 0
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="0.01"} 0
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="0.02"} 1590
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="0.04"} 3633
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="0.08"} 4803
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="0.16"} 5160
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="0.32"} 5232
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="0.64"} 5242
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="1.28"} 5254
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="2.56"} 5280
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="0",le="+Inf"} 5335
+kminion_end_to_end_produce_latency_seconds_sum{partition_id="0"} 548.2071664969995
+kminion_end_to_end_produce_latency_seconds_count{partition_id="0"} 5335
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="0.005"} 0
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="0.01"} 0
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="0.02"} 1594
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="0.04"} 3722
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="0.08"} 4786
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="0.16"} 5118
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="0.32"} 5175
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="0.64"} 5185
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="1.28"} 5195
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="2.56"} 5218
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="1",le="+Inf"} 5268
+kminion_end_to_end_produce_latency_seconds_sum{partition_id="1"} 609.3003144570014
+kminion_end_to_end_produce_latency_seconds_count{partition_id="1"} 5268
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="0.005"} 0
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="0.01"} 0
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="0.02"} 1602
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="0.04"} 3661
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="0.08"} 4826
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="0.16"} 5154
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="0.32"} 5226
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="0.64"} 5233
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="1.28"} 5245
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="2.56"} 5273
+kminion_end_to_end_produce_latency_seconds_bucket{partition_id="2",le="+Inf"} 5354
+kminion_end_to_end_produce_latency_seconds_sum{partition_id="2"} 758.5420526830012
+kminion_end_to_end_produce_latency_seconds_count{partition_id="2"} 5354
+# HELP kminion_end_to_end_roundtrip_latency_seconds Time it took between sending (producing) and receiving (consuming) a message
+# TYPE kminion_end_to_end_roundtrip_latency_seconds histogram
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="0.005"} 0
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="0.01"} 0
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="0.02"} 1615
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="0.04"} 3686
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="0.08"} 4810
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="0.16"} 5158
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="0.32"} 5233
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="0.64"} 5242
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="1.28"} 5254
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="2.56"} 5280
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="5.12"} 5299
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="0",le="+Inf"} 5299
+kminion_end_to_end_roundtrip_latency_seconds_sum{partition_id="0"} 318.735569424999
+kminion_end_to_end_roundtrip_latency_seconds_count{partition_id="0"} 5299
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="0.005"} 0
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="0.01"} 0
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="0.02"} 1567
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="0.04"} 3660
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="0.08"} 4779
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="0.16"} 5112
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="0.32"} 5175
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="0.64"} 5183
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="1.28"} 5194
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="2.56"} 5217
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="5.12"} 5235
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="1",le="+Inf"} 5235
+kminion_end_to_end_roundtrip_latency_seconds_sum{partition_id="1"} 303.73668654999875
+kminion_end_to_end_roundtrip_latency_seconds_count{partition_id="1"} 5235
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="0.005"} 0
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="0.01"} 0
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="0.02"} 1664
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="0.04"} 3736
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="0.08"} 4854
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="0.16"} 5153
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="0.32"} 5225
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="0.64"} 5233
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="1.28"} 5245
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="2.56"} 5273
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="5.12"} 5296
+kminion_end_to_end_roundtrip_latency_seconds_bucket{partition_id="2",le="+Inf"} 5296
+kminion_end_to_end_roundtrip_latency_seconds_sum{partition_id="2"} 329.32051440100105
+kminion_end_to_end_roundtrip_latency_seconds_count{partition_id="2"} 5296
+# HELP kminion_exporter_offset_consumer_records_consumed_total The number of offset records that have been consumed by the internal offset consumer
+# TYPE kminion_exporter_offset_consumer_records_consumed_total counter
+kminion_exporter_offset_consumer_records_consumed_total 0
+# HELP kminion_exporter_up Build info about this Prometheus Exporter. Gauge value is 0 if one or more scrapes have failed.
+# TYPE kminion_exporter_up gauge
+kminion_exporter_up{version=""} 1
+# HELP kminion_kafka_broker_info Kafka broker information
+# TYPE kminion_kafka_broker_info gauge
+kminion_kafka_broker_info{address="kafka-lab-dual-role-0.kafka-lab-kafka-brokers.kafka.svc",broker_id="0",is_controller="true",port="9092",rack_id=""} 1
+kminion_kafka_broker_info{address="kafka-lab-dual-role-1.kafka-lab-kafka-brokers.kafka.svc",broker_id="1",is_controller="false",port="9092",rack_id=""} 1
+kminion_kafka_broker_info{address="kafka-lab-dual-role-2.kafka-lab-kafka-brokers.kafka.svc",broker_id="2",is_controller="false",port="9092",rack_id=""} 1
+# HELP kminion_kafka_broker_log_dir_size_total_bytes The summed size in bytes of all log dirs for a given broker
+# TYPE kminion_kafka_broker_log_dir_size_total_bytes gauge
+kminion_kafka_broker_log_dir_size_total_bytes{address="kafka-lab-dual-role-0.kafka-lab-kafka-brokers.kafka.svc",broker_id="0",port="9092",rack_id=""} 1.59023733e+08
+kminion_kafka_broker_log_dir_size_total_bytes{address="kafka-lab-dual-role-1.kafka-lab-kafka-brokers.kafka.svc",broker_id="1",port="9092",rack_id=""} 1.59023733e+08
+kminion_kafka_broker_log_dir_size_total_bytes{address="kafka-lab-dual-role-2.kafka-lab-kafka-brokers.kafka.svc",broker_id="2",port="9092",rack_id=""} 1.59023733e+08
+# HELP kminion_kafka_cluster_info Kafka cluster information
+# TYPE kminion_kafka_cluster_info gauge
+kminion_kafka_cluster_info{broker_count="3",cluster_id="86Zrg_oVRGueTQEqam1bXQ",cluster_version="at least v4.2",controller_id="0"} 1
+# HELP kminion_kafka_consumer_group_info Consumer Group info metrics. It will report 1 if the group is in the stable state, otherwise 0.
+# TYPE kminion_kafka_consumer_group_info gauge
+kminion_kafka_consumer_group_info{coordinator_id="0",group_id="analytics",protocol="cooperative-sticky",protocol_type="consumer",state="Stable"} 1
+kminion_kafka_consumer_group_info{coordinator_id="0",group_id="inventory",protocol="cooperative-sticky",protocol_type="consumer",state="Stable"} 1
+kminion_kafka_consumer_group_info{coordinator_id="0",group_id="karapace-autogenerated-c90a6790f621",protocol="range",protocol_type="consumer",state="Stable"} 1
+kminion_kafka_consumer_group_info{coordinator_id="0",group_id="shipping",protocol="cooperative-sticky",protocol_type="consumer",state="Stable"} 1
+kminion_kafka_consumer_group_info{coordinator_id="1",group_id="analytics-dlq",protocol="cooperative-sticky",protocol_type="consumer",state="Stable"} 1
+kminion_kafka_consumer_group_info{coordinator_id="1",group_id="notification",protocol="",protocol_type="consumer",state="Empty"} 0
+kminion_kafka_consumer_group_info{coordinator_id="1",group_id="payment",protocol="cooperative-sticky",protocol_type="consumer",state="Stable"} 1
+kminion_kafka_consumer_group_info{coordinator_id="2",group_id="schema-registry",protocol="v0",protocol_type="sr",state="Stable"} 1
+# HELP kminion_kafka_consumer_group_members Consumer Group member count metrics. It will report the number of members in the consumer group
+# TYPE kminion_kafka_consumer_group_members gauge
+kminion_kafka_consumer_group_members{group_id="analytics"} 1
+kminion_kafka_consumer_group_members{group_id="analytics-dlq"} 1
+kminion_kafka_consumer_group_members{group_id="inventory"} 1
+kminion_kafka_consumer_group_members{group_id="karapace-autogenerated-c90a6790f621"} 1
+kminion_kafka_consumer_group_members{group_id="notification"} 0
+kminion_kafka_consumer_group_members{group_id="payment"} 1
+kminion_kafka_consumer_group_members{group_id="schema-registry"} 1
+kminion_kafka_consumer_group_members{group_id="shipping"} 1
+# HELP kminion_kafka_consumer_group_topic_assigned_partitions It will report the number of partitions assigned in the consumer group for a given topic
+# TYPE kminion_kafka_consumer_group_topic_assigned_partitions gauge
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="inventory.rejected"} 3
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="inventory.released"} 3
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="inventory.reserved"} 6
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="notifications.sent"} 6
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="orders.cancelled"} 3
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="orders.created"} 6
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="orders.shipped"} 6
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="payments.completed"} 6
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="payments.failed"} 3
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics",topic_name="payments.refunded"} 3
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="analytics-dlq",topic_name="orders.dlq"} 3
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="inventory",topic_name="orders.cancelled"} 3
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="inventory",topic_name="orders.created"} 6
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="karapace-autogenerated-c90a6790f621",topic_name="_schemas"} 1
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="payment",topic_name="orders.cancelled"} 3
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="payment",topic_name="orders.created"} 6
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="shipping",topic_name="inventory.rejected"} 3
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="shipping",topic_name="inventory.reserved"} 6
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="shipping",topic_name="payments.completed"} 6
+kminion_kafka_consumer_group_topic_assigned_partitions{group_id="shipping",topic_name="payments.failed"} 3
+# HELP kminion_kafka_consumer_group_topic_lag The number of messages a consumer group is lagging behind across all partitions in a topic
+# TYPE kminion_kafka_consumer_group_topic_lag gauge
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="inventory.rejected"} 1546
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="inventory.released"} 3146
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="inventory.reserved"} 53396
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="notifications.sent"} 41058
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="orders.cancelled"} 17135
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="orders.created"} 96394
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="orders.shipped"} 20358
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="payments.completed"} 100698
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="payments.failed"} 126
+kminion_kafka_consumer_group_topic_lag{group_id="analytics",topic_name="payments.refunded"} 16875
+kminion_kafka_consumer_group_topic_lag{group_id="inventory",topic_name="orders.cancelled"} 16181
+kminion_kafka_consumer_group_topic_lag{group_id="inventory",topic_name="orders.created"} 26229
+kminion_kafka_consumer_group_topic_lag{group_id="notification",topic_name="orders.cancelled"} 26143
+kminion_kafka_consumer_group_topic_lag{group_id="notification",topic_name="orders.created"} 81983
+kminion_kafka_consumer_group_topic_lag{group_id="notification",topic_name="orders.shipped"} 26484
+kminion_kafka_consumer_group_topic_lag{group_id="notification",topic_name="payments.refunded"} 14355
+kminion_kafka_consumer_group_topic_lag{group_id="payment",topic_name="orders.cancelled"} 55
+kminion_kafka_consumer_group_topic_lag{group_id="payment",topic_name="orders.created"} 1222
+kminion_kafka_consumer_group_topic_lag{group_id="shipping",topic_name="inventory.rejected"} 369
+kminion_kafka_consumer_group_topic_lag{group_id="shipping",topic_name="inventory.reserved"} 15857
+kminion_kafka_consumer_group_topic_lag{group_id="shipping",topic_name="payments.completed"} 73344
+kminion_kafka_consumer_group_topic_lag{group_id="shipping",topic_name="payments.failed"} 73
+# HELP kminion_kafka_consumer_group_topic_members It will report the number of members in the consumer group assigned on a given topic
+# TYPE kminion_kafka_consumer_group_topic_members gauge
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="inventory.rejected"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="inventory.released"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="inventory.reserved"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="notifications.sent"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="orders.cancelled"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="orders.created"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="orders.shipped"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="payments.completed"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="payments.failed"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics",topic_name="payments.refunded"} 1
+kminion_kafka_consumer_group_topic_members{group_id="analytics-dlq",topic_name="orders.dlq"} 1
+kminion_kafka_consumer_group_topic_members{group_id="inventory",topic_name="orders.cancelled"} 1
+kminion_kafka_consumer_group_topic_members{group_id="inventory",topic_name="orders.created"} 1
+kminion_kafka_consumer_group_topic_members{group_id="karapace-autogenerated-c90a6790f621",topic_name="_schemas"} 1
+kminion_kafka_consumer_group_topic_members{group_id="payment",topic_name="orders.cancelled"} 1
+kminion_kafka_consumer_group_topic_members{group_id="payment",topic_name="orders.created"} 1
+kminion_kafka_consumer_group_topic_members{group_id="shipping",topic_name="inventory.rejected"} 1
+kminion_kafka_consumer_group_topic_members{group_id="shipping",topic_name="inventory.reserved"} 1
+kminion_kafka_consumer_group_topic_members{group_id="shipping",topic_name="payments.completed"} 1
+kminion_kafka_consumer_group_topic_members{group_id="shipping",topic_name="payments.failed"} 1
+# HELP kminion_kafka_consumer_group_topic_offset_sum The sum of all committed group offsets across all partitions in a topic
+# TYPE kminion_kafka_consumer_group_topic_offset_sum gauge
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="inventory.rejected"} 19946
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="inventory.released"} 5657
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="inventory.reserved"} 55544
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="notifications.sent"} 49942
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="orders.cancelled"} 24817
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="orders.created"} 61064
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="orders.shipped"} 32081
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="payments.completed"} 51596
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="payments.failed"} 3870
+kminion_kafka_consumer_group_topic_offset_sum{group_id="analytics",topic_name="payments.refunded"} 21099
+kminion_kafka_consumer_group_topic_offset_sum{group_id="inventory",topic_name="orders.cancelled"} 25771
+kminion_kafka_consumer_group_topic_offset_sum{group_id="inventory",topic_name="orders.created"} 131229
+kminion_kafka_consumer_group_topic_offset_sum{group_id="notification",topic_name="orders.cancelled"} 4331
+kminion_kafka_consumer_group_topic_offset_sum{group_id="notification",topic_name="orders.created"} 75475
+kminion_kafka_consumer_group_topic_offset_sum{group_id="notification",topic_name="orders.shipped"} 6282
+kminion_kafka_consumer_group_topic_offset_sum{group_id="notification",topic_name="payments.refunded"} 4912
+kminion_kafka_consumer_group_topic_offset_sum{group_id="payment",topic_name="orders.cancelled"} 41897
+kminion_kafka_consumer_group_topic_offset_sum{group_id="payment",topic_name="orders.created"} 156236
+kminion_kafka_consumer_group_topic_offset_sum{group_id="shipping",topic_name="inventory.rejected"} 21123
+kminion_kafka_consumer_group_topic_offset_sum{group_id="shipping",topic_name="inventory.reserved"} 93083
+kminion_kafka_consumer_group_topic_offset_sum{group_id="shipping",topic_name="payments.completed"} 78950
+kminion_kafka_consumer_group_topic_offset_sum{group_id="shipping",topic_name="payments.failed"} 3923
+# HELP kminion_kafka_consumer_group_topic_partition_lag The number of messages a consumer group is lagging behind the latest offset of a partition
+# TYPE kminion_kafka_consumer_group_topic_partition_lag gauge
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="inventory.rejected"} 816
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="inventory.released"} 3146
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="inventory.reserved"} 6329
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="notifications.sent"} 0
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="orders.cancelled"} 9653
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="orders.created"} 15522
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="orders.shipped"} 0
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="payments.completed"} 19147
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="payments.failed"} 31
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="0",topic_name="payments.refunded"} 11651
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="inventory.rejected"} 730
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="inventory.released"} 0
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="inventory.reserved"} 10808
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="notifications.sent"} 15319
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="orders.cancelled"} 2412
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="orders.created"} 14368
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="orders.shipped"} 7966
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="payments.completed"} 14837
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="payments.failed"} 47
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="1",topic_name="payments.refunded"} 2739
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="inventory.rejected"} 0
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="inventory.released"} 0
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="inventory.reserved"} 12725
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="notifications.sent"} 7345
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="orders.cancelled"} 5070
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="orders.created"} 17455
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="orders.shipped"} 6027
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="payments.completed"} 14799
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="payments.failed"} 48
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="2",topic_name="payments.refunded"} 2485
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="3",topic_name="inventory.reserved"} 5852
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="3",topic_name="notifications.sent"} 7370
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="3",topic_name="orders.created"} 17502
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="3",topic_name="orders.shipped"} 1223
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="3",topic_name="payments.completed"} 17927
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="4",topic_name="inventory.reserved"} 6982
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="4",topic_name="notifications.sent"} 6283
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="4",topic_name="orders.created"} 15681
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="4",topic_name="orders.shipped"} 2241
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="4",topic_name="payments.completed"} 18720
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="5",topic_name="inventory.reserved"} 10700
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="5",topic_name="notifications.sent"} 4741
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="5",topic_name="orders.created"} 15866
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="5",topic_name="orders.shipped"} 2901
+kminion_kafka_consumer_group_topic_partition_lag{group_id="analytics",partition_id="5",topic_name="payments.completed"} 15268
+kminion_kafka_consumer_group_topic_partition_lag{group_id="inventory",partition_id="0",topic_name="orders.cancelled"} 7107
+kminion_kafka_consumer_group_topic_partition_lag{group_id="inventory",partition_id="0",topic_name="orders.created"} 4954
+kminion_kafka_consumer_group_topic_partition_lag{group_id="inventory",partition_id="1",topic_name="orders.cancelled"} 4672
+kminion_kafka_consumer_group_topic_partition_lag{group_id="inventory",partition_id="1",topic_name="orders.created"} 3172
+kminion_kafka_consumer_group_topic_partition_lag{group_id="inventory",partition_id="2",topic_name="orders.cancelled"} 4402
+kminion_kafka_consumer_group_topic_partition_lag{group_id="inventory",partition_id="2",topic_name="orders.created"} 3621
+kminion_kafka_consumer_group_topic_partition_lag{group_id="inventory",partition_id="3",topic_name="orders.created"} 3176
+kminion_kafka_consumer_group_topic_partition_lag{group_id="inventory",partition_id="4",topic_name="orders.created"} 7492
+kminion_kafka_consumer_group_topic_partition_lag{group_id="inventory",partition_id="5",topic_name="orders.created"} 3814
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="0",topic_name="orders.cancelled"} 17982
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="0",topic_name="orders.created"} 14969
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="0",topic_name="orders.shipped"} 4332
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="1",topic_name="orders.cancelled"} 8161
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="1",topic_name="orders.created"} 9169
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="1",topic_name="payments.refunded"} 7779
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="2",topic_name="orders.created"} 14704
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="2",topic_name="orders.shipped"} 11825
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="2",topic_name="payments.refunded"} 6576
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="3",topic_name="orders.created"} 9268
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="3",topic_name="orders.shipped"} 6763
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="4",topic_name="orders.created"} 18556
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="4",topic_name="orders.shipped"} 3564
+kminion_kafka_consumer_group_topic_partition_lag{group_id="notification",partition_id="5",topic_name="orders.created"} 15317
+kminion_kafka_consumer_group_topic_partition_lag{group_id="payment",partition_id="0",topic_name="orders.cancelled"} 0
+kminion_kafka_consumer_group_topic_partition_lag{group_id="payment",partition_id="0",topic_name="orders.created"} 266
+kminion_kafka_consumer_group_topic_partition_lag{group_id="payment",partition_id="1",topic_name="orders.cancelled"} 55
+kminion_kafka_consumer_group_topic_partition_lag{group_id="payment",partition_id="1",topic_name="orders.created"} 232
+kminion_kafka_consumer_group_topic_partition_lag{group_id="payment",partition_id="2",topic_name="orders.cancelled"} 0
+kminion_kafka_consumer_group_topic_partition_lag{group_id="payment",partition_id="2",topic_name="orders.created"} 172
+kminion_kafka_consumer_group_topic_partition_lag{group_id="payment",partition_id="3",topic_name="orders.created"} 173
+kminion_kafka_consumer_group_topic_partition_lag{group_id="payment",partition_id="4",topic_name="orders.created"} 237
+kminion_kafka_consumer_group_topic_partition_lag{group_id="payment",partition_id="5",topic_name="orders.created"} 142
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="0",topic_name="inventory.rejected"} 369
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="0",topic_name="inventory.reserved"} 1878
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="0",topic_name="payments.completed"} 12492
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="0",topic_name="payments.failed"} 31
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="1",topic_name="inventory.rejected"} 0
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="1",topic_name="inventory.reserved"} 1574
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="1",topic_name="payments.completed"} 9231
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="1",topic_name="payments.failed"} 35
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="2",topic_name="inventory.rejected"} 0
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="2",topic_name="inventory.reserved"} 4355
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="2",topic_name="payments.completed"} 9919
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="2",topic_name="payments.failed"} 7
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="3",topic_name="inventory.reserved"} 2752
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="3",topic_name="payments.completed"} 14174
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="4",topic_name="inventory.reserved"} 2224
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="4",topic_name="payments.completed"} 14101
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="5",topic_name="inventory.reserved"} 3074
+kminion_kafka_consumer_group_topic_partition_lag{group_id="shipping",partition_id="5",topic_name="payments.completed"} 13427
+# HELP kminion_kafka_received_bytes 
+# TYPE kminion_kafka_received_bytes counter
+kminion_kafka_received_bytes 8.585493e+06
+# HELP kminion_kafka_requests_received_total 
+# TYPE kminion_kafka_requests_received_total counter
+kminion_kafka_requests_received_total 4938
+# HELP kminion_kafka_requests_sent_total 
+# TYPE kminion_kafka_requests_sent_total counter
+kminion_kafka_requests_sent_total 4938
+# HELP kminion_kafka_sent_bytes 
+# TYPE kminion_kafka_sent_bytes counter
+kminion_kafka_sent_bytes 811067
+# HELP kminion_kafka_topic_high_water_mark_sum Sum of all the topic's partition high water marks
+# TYPE kminion_kafka_topic_high_water_mark_sum gauge
+kminion_kafka_topic_high_water_mark_sum{topic_name="_schemas"} 18
+kminion_kafka_topic_high_water_mark_sum{topic_name="inventory.rejected"} 21492
+kminion_kafka_topic_high_water_mark_sum{topic_name="inventory.released"} 8803
+kminion_kafka_topic_high_water_mark_sum{topic_name="inventory.reserved"} 108940
+kminion_kafka_topic_high_water_mark_sum{topic_name="kminion-end-to-end"} 15960
+kminion_kafka_topic_high_water_mark_sum{topic_name="notifications.sent"} 91000
+kminion_kafka_topic_high_water_mark_sum{topic_name="orders.cancelled"} 41952
+kminion_kafka_topic_high_water_mark_sum{topic_name="orders.created"} 157458
+kminion_kafka_topic_high_water_mark_sum{topic_name="orders.dlq"} 0
+kminion_kafka_topic_high_water_mark_sum{topic_name="orders.shipped"} 52439
+kminion_kafka_topic_high_water_mark_sum{topic_name="payments.completed"} 152294
+kminion_kafka_topic_high_water_mark_sum{topic_name="payments.failed"} 3996
+kminion_kafka_topic_high_water_mark_sum{topic_name="payments.refunded"} 37974
+kminion_kafka_topic_high_water_mark_sum{topic_name="platform.audit"} 0
+kminion_kafka_topic_high_water_mark_sum{topic_name="platform.control"} 0
+# HELP kminion_kafka_topic_info Info labels for a given topic
+# TYPE kminion_kafka_topic_info gauge
+kminion_kafka_topic_info{cleanup_policy="compact",min_insync_replicas="2",partition_count="1",replication_factor="3",retention_bytes="-1",retention_ms="604800000",topic_name="_schemas"} 1
+kminion_kafka_topic_info{cleanup_policy="compact",min_insync_replicas="2",partition_count="1",replication_factor="3",retention_bytes="-1",retention_ms="604800000",topic_name="platform.control"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="1",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="platform.audit"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="3",replication_factor="3",retention_bytes="-1",retention_ms="86400000",topic_name="kminion-end-to-end"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="3",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="inventory.rejected"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="3",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="inventory.released"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="3",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="orders.cancelled"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="3",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="orders.dlq"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="3",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="payments.failed"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="3",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="payments.refunded"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="6",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="inventory.reserved"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="6",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="notifications.sent"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="6",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="orders.created"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="6",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="orders.shipped"} 1
+kminion_kafka_topic_info{cleanup_policy="delete",min_insync_replicas="2",partition_count="6",replication_factor="3",retention_bytes="268435456",retention_ms="21600000",topic_name="payments.completed"} 1
+# HELP kminion_kafka_topic_log_dir_size_total_bytes The summed size in bytes of partitions for a given topic. This includes the used space for replica partitions.
+# TYPE kminion_kafka_topic_log_dir_size_total_bytes gauge
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="__consumer_offsets"} 5.469648e+06
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="_schemas"} 69624
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="inventory.rejected"} 1.1975001e+07
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="inventory.released"} 5.454717e+06
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="inventory.reserved"} 6.4623951e+07
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="kminion-end-to-end"} 9.866232e+06
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="notifications.sent"} 5.0657244e+07
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="orders.cancelled"} 2.106627e+07
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="orders.created"} 1.3342767e+08
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="orders.dlq"} 0
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="orders.shipped"} 3.2315943e+07
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="payments.completed"} 1.15735863e+08
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="payments.failed"} 3.451554e+06
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="payments.refunded"} 2.2957482e+07
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="platform.audit"} 0
+kminion_kafka_topic_log_dir_size_total_bytes{topic_name="platform.control"} 0
+# HELP kminion_kafka_topic_low_water_mark_sum Sum of all the topic's partition low water marks
+# TYPE kminion_kafka_topic_low_water_mark_sum gauge
+kminion_kafka_topic_low_water_mark_sum{topic_name="_schemas"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="inventory.rejected"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="inventory.released"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="inventory.reserved"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="kminion-end-to-end"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="notifications.sent"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="orders.cancelled"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="orders.created"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="orders.dlq"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="orders.shipped"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="payments.completed"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="payments.failed"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="payments.refunded"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="platform.audit"} 0
+kminion_kafka_topic_low_water_mark_sum{topic_name="platform.control"} 0
+# HELP kminion_kafka_topic_partition_high_water_mark Partition High Water Mark
+# TYPE kminion_kafka_topic_partition_high_water_mark gauge
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="_schemas"} 18
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="inventory.rejected"} 8476
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="inventory.released"} 6412
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="inventory.reserved"} 17387
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="kminion-end-to-end"} 5336
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="notifications.sent"} 13020
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="orders.cancelled"} 19990
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="orders.created"} 26249
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="orders.dlq"} 0
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="orders.shipped"} 4971
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="payments.completed"} 25311
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="payments.failed"} 1314
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="payments.refunded"} 18707
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="platform.audit"} 0
+kminion_kafka_topic_partition_high_water_mark{partition_id="0",topic_name="platform.control"} 0
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="inventory.rejected"} 6053
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="inventory.released"} 1411
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="inventory.reserved"} 18832
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="kminion-end-to-end"} 5269
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="notifications.sent"} 19655
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="orders.cancelled"} 10484
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="orders.created"} 26005
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="orders.dlq"} 0
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="orders.shipped"} 12575
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="payments.completed"} 25166
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="payments.failed"} 1342
+kminion_kafka_topic_partition_high_water_mark{partition_id="1",topic_name="payments.refunded"} 9122
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="inventory.rejected"} 6963
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="inventory.released"} 980
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="inventory.reserved"} 19444
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="kminion-end-to-end"} 5355
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="notifications.sent"} 14088
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="orders.cancelled"} 11478
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="orders.created"} 26227
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="orders.dlq"} 0
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="orders.shipped"} 12850
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="payments.completed"} 25411
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="payments.failed"} 1340
+kminion_kafka_topic_partition_high_water_mark{partition_id="2",topic_name="payments.refunded"} 10145
+kminion_kafka_topic_partition_high_water_mark{partition_id="3",topic_name="inventory.reserved"} 18132
+kminion_kafka_topic_partition_high_water_mark{partition_id="3",topic_name="notifications.sent"} 18023
+kminion_kafka_topic_partition_high_water_mark{partition_id="3",topic_name="orders.created"} 26266
+kminion_kafka_topic_partition_high_water_mark{partition_id="3",topic_name="orders.shipped"} 6881
+kminion_kafka_topic_partition_high_water_mark{partition_id="3",topic_name="payments.completed"} 25451
+kminion_kafka_topic_partition_high_water_mark{partition_id="4",topic_name="inventory.reserved"} 16291
+kminion_kafka_topic_partition_high_water_mark{partition_id="4",topic_name="notifications.sent"} 13033
+kminion_kafka_topic_partition_high_water_mark{partition_id="4",topic_name="orders.created"} 26242
+kminion_kafka_topic_partition_high_water_mark{partition_id="4",topic_name="orders.shipped"} 8064
+kminion_kafka_topic_partition_high_water_mark{partition_id="4",topic_name="payments.completed"} 25324
+kminion_kafka_topic_partition_high_water_mark{partition_id="5",topic_name="inventory.reserved"} 18854
+kminion_kafka_topic_partition_high_water_mark{partition_id="5",topic_name="notifications.sent"} 13181
+kminion_kafka_topic_partition_high_water_mark{partition_id="5",topic_name="orders.created"} 26469
+kminion_kafka_topic_partition_high_water_mark{partition_id="5",topic_name="orders.shipped"} 7098
+kminion_kafka_topic_partition_high_water_mark{partition_id="5",topic_name="payments.completed"} 25631
+# HELP kminion_kafka_topic_partition_low_water_mark Partition Low Water Mark
+# TYPE kminion_kafka_topic_partition_low_water_mark gauge
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="_schemas"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="inventory.rejected"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="inventory.released"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="inventory.reserved"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="kminion-end-to-end"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="notifications.sent"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="orders.cancelled"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="orders.created"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="orders.dlq"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="orders.shipped"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="payments.completed"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="payments.failed"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="payments.refunded"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="platform.audit"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="0",topic_name="platform.control"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="inventory.rejected"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="inventory.released"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="inventory.reserved"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="kminion-end-to-end"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="notifications.sent"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="orders.cancelled"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="orders.created"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="orders.dlq"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="orders.shipped"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="payments.completed"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="payments.failed"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="1",topic_name="payments.refunded"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="inventory.rejected"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="inventory.released"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="inventory.reserved"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="kminion-end-to-end"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="notifications.sent"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="orders.cancelled"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="orders.created"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="orders.dlq"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="orders.shipped"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="payments.completed"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="payments.failed"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="2",topic_name="payments.refunded"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="3",topic_name="inventory.reserved"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="3",topic_name="notifications.sent"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="3",topic_name="orders.created"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="3",topic_name="orders.shipped"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="3",topic_name="payments.completed"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="4",topic_name="inventory.reserved"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="4",topic_name="notifications.sent"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="4",topic_name="orders.created"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="4",topic_name="orders.shipped"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="4",topic_name="payments.completed"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="5",topic_name="inventory.reserved"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="5",topic_name="notifications.sent"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="5",topic_name="orders.created"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="5",topic_name="orders.shipped"} 0
+kminion_kafka_topic_partition_low_water_mark{partition_id="5",topic_name="payments.completed"} 0
+# HELP kminion_log_messages_total Total number of log messages by log level emitted by KMinion.
+# TYPE kminion_log_messages_total counter
+kminion_log_messages_total{level="debug"} 0
+kminion_log_messages_total{level="error"} 53
+kminion_log_messages_total{level="fatal"} 0
+kminion_log_messages_total{level="info"} 0
+kminion_log_messages_total{level="panic"} 0
+kminion_log_messages_total{level="warn"} 64
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 36.16
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 524287
+# HELP process_network_receive_bytes_total Number of bytes received by the process over the network.
+# TYPE process_network_receive_bytes_total counter
+process_network_receive_bytes_total 1.9445214e+07
+# HELP process_network_transmit_bytes_total Number of bytes sent by the process over the network.
+# TYPE process_network_transmit_bytes_total counter
+process_network_transmit_bytes_total 1.2227875e+07
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 21
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 2.9343744e+07
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.79434278717e+09
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 1.311576064e+09
+# HELP process_virtual_memory_max_bytes Maximum amount of virtual memory available in bytes.
+# TYPE process_virtual_memory_max_bytes gauge
+process_virtual_memory_max_bytes 1.8446744073709552e+19
+# HELP promhttp_metric_handler_requests_in_flight Current number of scrapes being served.
+# TYPE promhttp_metric_handler_requests_in_flight gauge
+promhttp_metric_handler_requests_in_flight 1
+# HELP promhttp_metric_handler_requests_total Total number of scrapes by HTTP status code.
+# TYPE promhttp_metric_handler_requests_total counter
+promhttp_metric_handler_requests_total{code="200"} 178
+promhttp_metric_handler_requests_total{code="500"} 0
+promhttp_metric_handler_requests_total{code="503"} 0
