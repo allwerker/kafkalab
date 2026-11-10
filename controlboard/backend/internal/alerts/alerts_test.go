@@ -44,7 +44,11 @@ type recorder struct {
 	timeline []api.TimelineEntry
 }
 
-func (r *recorder) change(a api.Alert) { r.mu.Lock(); defer r.mu.Unlock(); r.changes = append(r.changes, a) }
+func (r *recorder) change(a api.Alert) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.changes = append(r.changes, a)
+}
 func (r *recorder) entry(e api.TimelineEntry) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -204,7 +208,7 @@ func Test_shouldAnnounceAResolutionWhenAPendingAlertVanishesWithoutFiring(t *tes
 	}
 }
 
-func Test_shouldListResolvedAlertsOnlyFor15MinutesInTheStateButFor24HoursInTheHistory(t *testing.T) {
+func Test_shouldHideAResolvedAlertFromTheStateButKeepItInTheHistoryWhenTwentyMinutesHavePassed(t *testing.T) {
 	// GIVEN: an alert resolved at 12:00
 	m, _, c, _ := manager(&Memory{})
 	resolved := strings.ReplaceAll(strings.ReplaceAll(lagWebhook, `"status":"firing"`, `"status":"resolved"`), "0001-01-01T00:00:00Z", "2026-11-10T12:00:00Z")
@@ -303,7 +307,7 @@ func Test_shouldPickOnlyPendingAlertsWhenVMAlertIsPolled(t *testing.T) {
 
 func Test_shouldReportAnErrorWhenVMAlertIsUnreachableOrAnswersGarbage(t *testing.T) {
 	// GIVEN: an invalid address, a closed port and an HTML error page
-	garbage := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Error(w, "<html>", 502) }))
+	garbage := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Error(w, "<html>", http.StatusBadGateway) }))
 	defer garbage.Close()
 	closed := httptest.NewServer(http.NotFoundHandler())
 	closed.Close()
@@ -328,7 +332,7 @@ func Test_shouldMergePendingAlertsPeriodicallyWhenPollingRuns(t *testing.T) {
 		defer mu.Unlock()
 		calls++
 		if calls == 1 {
-			http.Error(w, "starting", 503)
+			http.Error(w, "starting", http.StatusServiceUnavailable)
 			return
 		}
 		_, _ = io.WriteString(w, vmalertBody)
@@ -339,7 +343,10 @@ func Test_shouldMergePendingAlertsPeriodicallyWhenPollingRuns(t *testing.T) {
 	done := make(chan struct{})
 
 	// WHEN: polling runs until the pending alerts show up
-	go func() { m.PollPending(ctx, VMAlert{Base: srv.URL, HTTP: srv.Client()}, 10*time.Millisecond); close(done) }()
+	go func() {
+		m.PollPending(ctx, VMAlert{Base: srv.URL, HTTP: srv.Client()}, 10*time.Millisecond)
+		close(done)
+	}()
 	deadline := time.Now().Add(5 * time.Second)
 	for len(m.Active()) != 2 && time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
@@ -380,7 +387,9 @@ func Test_shouldPostLabTestAlertToAlertmanagerWhenATestAlertIsRequested(t *testi
 
 func Test_shouldReportAlertmanagerUnavailableWhenTheTestAlertCannotBeDelivered(t *testing.T) {
 	// GIVEN: an Alertmanager that rejects alerts, a closed port and an invalid address
-	rejecting := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Error(w, "maintenance", 503) }))
+	rejecting := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "maintenance", http.StatusServiceUnavailable)
+	}))
 	defer rejecting.Close()
 	closed := httptest.NewServer(http.NotFoundHandler())
 	closed.Close()

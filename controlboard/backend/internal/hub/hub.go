@@ -16,6 +16,9 @@ import (
 	"kafkalab/controlboard/backend/internal/api"
 )
 
+// pong is the answer to a client ping (contract: exactly {"type":"pong"}).
+var pong = []byte(`{"type":"pong"}`)
+
 // DefaultQueue is the number of messages buffered per client.
 const DefaultQueue = 256
 
@@ -186,7 +189,6 @@ func (h *Hub) read(ctx context.Context, conn *websocket.Conn, c *client) {
 			continue
 		}
 		// Writes are safe concurrently with the writer loop; a failing write ends the reader next round.
-		pong, _ := h.encode(api.Message{Type: api.MsgPong, Ts: h.o.Now().UTC()})
 		wctx, wcancel := context.WithTimeout(ctx, h.o.WriteTimeout)
 		_ = conn.Write(wctx, websocket.MessageText, pong)
 		wcancel()

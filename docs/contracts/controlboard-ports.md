@@ -50,10 +50,26 @@ kube-state-metrics merged with `Controls()`), so the engine never builds `Servic
 | `ErrUnknownService` | 404 | `unknown_service` |
 | `ErrInvalid` | 400 | `invalid_request` |
 | `ErrConflict` | 409 | `conflict` |
+| `ErrDrillActive` | 409 | `drill_active` |
+| `ErrDrillFinished` | 409 | `drill_finished` |
 | `ErrUnavailable` | 503 | `unavailable` |
 | anything else | 500 | `internal` |
 
 `message` is `err.Error()`, so wrap with a human sentence: `fmt.Errorf("%w: broker 1 is already stopped", api.ErrBrokerFaultActive)`.
+
+## Agreed behaviour (lead + frontend)
+- `autoRecover=false`: the fault stays after `endsAt`, status stays `running` until `Stop`.
+- `Stop` → status `aborted`.
+- Broker params are numbers 0..2 (`options` lists them as strings).
+- `Experiment.category` / `severity` (optional) carry the scenario's values; empty during an unsolved drill.
+- `ServiceControl.Knobs` = effective flat knobs only, without Tuning Lab client settings.
+- `Drill.scenario` = scenario id (after solved/revealed); `candidates` carry id + name.
+- Board side: a pending alert that clears is sent as `resolved`; pong is exactly `{"type":"pong"}`.
+
+## Wiring
+The engine needs `Observer` at construction and the board needs the engine, so `main.go` does
+`b := board.New(...)`, `exp := experiments.New(..., b.Observer())`, `b.SetExperiments(exp)`
+before serving (today: `b.SetExperiments(fakeexp.New(nil))`).
 
 ## Events (`api.Event`, exactly one field set)
 - `Experiment` on every status/observation/report change → WebSocket `experiment`.

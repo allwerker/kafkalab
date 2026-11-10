@@ -28,14 +28,20 @@ func Test_shouldRunAnExperimentUntilItsDurationPassesWhenATrafficScenarioIsStart
 
 	// WHEN: a 30 s traffic spike is started and 31 s pass
 	e, err := f.Start(ctx, api.StartRequest{Scenario: ScenarioTraffic, DurationSec: 30, AutoRecover: true})
+	manual, _ := f.Start(ctx, api.StartRequest{Scenario: ScenarioTraffic, DurationSec: 30})
 	if err != nil {
 		t.Fatal(err)
 	}
-	running := f.List()[0].Status
+	running := f.List()[1].Status
 	c.t = c.t.Add(31 * time.Second)
-	done := f.List()[0]
+	list := f.List()
+	done, kept := list[1], list[0]
 
 	// THEN: it was running, is completed now with a report, and the change was announced
+	// AND: the experiment without auto-recovery keeps running until it is stopped
+	if kept.ID != manual.ID || kept.Status != api.StatusRunning || kept.Category != "traffic" {
+		t.Fatalf("manual %+v", kept)
+	}
 	if e.Status != api.StatusRunning || running != api.StatusRunning || len(f.Scenarios()) != 2 {
 		t.Fatalf("started %+v", e)
 	}
@@ -50,7 +56,7 @@ func Test_shouldRunAnExperimentUntilItsDurationPassesWhenATrafficScenarioIsStart
 func Test_shouldStartAScheduledExperimentLaterWhenAStartDelayIsGiven(t *testing.T) {
 	// GIVEN: a traffic spike scheduled to start in 10 s with the default duration
 	f, c := newFake()
-	e, _ := f.Start(ctx, api.StartRequest{Scenario: ScenarioTraffic, StartDelaySec: 10, Params: api.Values{"factor": 3.0}})
+	e, _ := f.Start(ctx, api.StartRequest{Scenario: ScenarioTraffic, StartDelaySec: 10, AutoRecover: true, Params: api.Values{"factor": 3.0}})
 
 	// WHEN: 10 s pass
 	c.t = c.t.Add(10 * time.Second)
@@ -330,7 +336,7 @@ func Test_shouldRefuseDrillActionsWhenTheDrillIsUnknownEndedOrAlreadyRunning(t *
 	_, ended := d.Guess(ctx, dr.ID, ScenarioTraffic)
 
 	// THEN: each is refused with the matching reason and the reveal shows the scenario
-	if !errors.Is(badLevel, api.ErrInvalid) || !errors.Is(twice, api.ErrConflict) || !errors.Is(unknown, api.ErrNotFound) || !errors.Is(ended, api.ErrConflict) {
+	if !errors.Is(badLevel, api.ErrInvalid) || !errors.Is(twice, api.ErrDrillActive) || !errors.Is(unknown, api.ErrNotFound) || !errors.Is(ended, api.ErrDrillFinished) {
 		t.Fatalf("%v / %v / %v / %v", badLevel, twice, unknown, ended)
 	}
 	if revealed.Status != "revealed" || revealed.Scenario != ScenarioTraffic {

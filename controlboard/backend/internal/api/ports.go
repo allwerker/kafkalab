@@ -28,7 +28,9 @@ var (
 	ErrNotFound             = errors.New("not found")                          // 404 not_found (experiment or drill id)
 	ErrUnknownService       = errors.New("unknown service")                    // 404 unknown_service
 	ErrInvalid              = errors.New("invalid request")                    // 400 invalid_request (bad params, knob, value)
-	ErrConflict             = errors.New("conflicting state")                  // 409 conflict (e.g. a drill is already running)
+	ErrConflict             = errors.New("conflicting state")                  // 409 conflict
+	ErrDrillActive          = errors.New("a drill is already running")         // 409 drill_active
+	ErrDrillFinished        = errors.New("the drill has ended")                // 409 drill_finished
 	ErrUnavailable          = errors.New("dependency temporarily unavailable") // 503 unavailable (Kafka, Kubernetes API down)
 )
 
@@ -40,7 +42,9 @@ type Experiments interface {
 	// req.Confirm == req.Scenario (ErrChaosDisarmed, ErrConfirmationRequired); only one broker
 	// fault at a time (ErrBrokerFaultActive); unknown id → ErrUnknownScenario; bad params → ErrInvalid.
 	Start(ctx context.Context, req StartRequest) (Experiment, error)
-	// Stop ends an experiment early and reverts it (ErrNotFound). Stopping an ended one returns it unchanged.
+	// Stop ends an experiment early and reverts it; the result has status "aborted" (ErrNotFound).
+	// Stopping an ended one returns it unchanged. With autoRecover=false an experiment keeps
+	// its fault after endsAt and stays "running" until it is stopped.
 	Stop(ctx context.Context, id string) (Experiment, error)
 	// List returns the active experiments plus the last 20 ended ones, newest first.
 	List() []Experiment
@@ -77,7 +81,9 @@ type Experiments interface {
 
 // DrillAPI is the Incident Drill part of the engine.
 type DrillAPI interface {
-	// Start starts a drill (difficulty easy | medium | hard, else ErrInvalid; one at a time, else ErrConflict).
+	// Start starts a drill (difficulty easy | medium | hard, else ErrInvalid; one at a time, else ErrDrillActive).
+	// Hint, Guess and Reveal on an ended drill → ErrDrillFinished; unknown id → ErrNotFound.
+	// Drill.scenario is the scenario id (only after solved/revealed); candidates carry id and name.
 	Start(ctx context.Context, difficulty, player string) (Drill, error)
 	Hint(ctx context.Context, id string) (Drill, error)
 	Guess(ctx context.Context, id, scenario string) (Drill, error)
@@ -93,7 +99,8 @@ type ServiceControl struct {
 	Service           string
 	Paused            bool
 	DesiredGeneration int64
-	// Knobs holds the non-default knobs only (same keys as SetKnobs).
+	// Knobs holds the effective non-default knobs only, flat (same keys as SetKnobs), without
+	// the Tuning Lab client settings (those are in Tuning()).
 	Knobs Values
 	// Replicas is the desired replica count when the engine changed it, nil if untouched.
 	Replicas *int

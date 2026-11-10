@@ -17,8 +17,8 @@ import (
 // (`or`) keep the board useful before the analytics service or KMinion are installed.
 var Queries = struct {
 	OrdersPerSec, RevenuePerMin, PaymentSuccessRate, ReservationSuccessRate, E2EP95Ms, InFlight, DlqPerMin, TotalLag string
-	BrokerUp, BrokerLeaders, BrokerController, BrokerUnderReplicated                                               string
-	SpecReplicas, ReadyReplicas, AppliedGeneration                                                                 string
+	BrokerUp, BrokerLeaders, BrokerController, BrokerUnderReplicated                                                 string
+	SpecReplicas, ReadyReplicas, AppliedGeneration                                                                   string
 }{
 	OrdersPerSec:  `sum(rate(lab_orders_created_total[1m])) or sum(rate(lab_generator_orders_total{kind!~"poison|duplicate"}[1m]))`,
 	RevenuePerMin: `sum(rate(lab_revenue_cents_total[1m])) * 60 / 100`,

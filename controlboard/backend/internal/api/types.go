@@ -106,6 +106,8 @@ type Experiment struct {
 	ID           string            `json:"id"`
 	Scenario     string            `json:"scenario"`
 	Name         string            `json:"name"`
+	Category     string            `json:"category,omitempty"` // scenario category; "" during an unsolved drill
+	Severity     string            `json:"severity,omitempty"` // scenario severity; "" during an unsolved drill
 	Status       string            `json:"status"`
 	Params       Values            `json:"params"`
 	CreatedAt    time.Time         `json:"createdAt"`

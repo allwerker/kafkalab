@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.serviceAccount }}
+  labels:
+    app.kubernetes.io/name: controlboard
+    app.kubernetes.io/part-of: kafka-lab
+{{- range $ns := .Values.targetNamespaces }}
+---
+# Placeholder: the experiment engine fills .Values.rules.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: controlboard
+  namespace: {{ $ns }}
+  labels:
+    app.kubernetes.io/part-of: kafka-lab
+rules: {{ toYaml $.Values.rules | nindent 2 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: controlboard
+  namespace: {{ $ns }}
+  labels:
+    app.kubernetes.io/part-of: kafka-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: controlboard
+subjects:
+  - kind: ServiceAccount
+    name: {{ $.Values.serviceAccount }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}

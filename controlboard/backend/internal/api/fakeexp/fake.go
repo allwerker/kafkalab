@@ -55,11 +55,11 @@ func New(now func() time.Time) *Fake {
 var catalog = []api.ScenarioDef{
 	{ID: ScenarioTraffic, Name: "Fake Traffic Spike", Description: "Doubles the order rate (fake engine).",
 		Category: "traffic", Severity: "low", DefaultDurationSec: 60,
-		Params: []api.ScenarioParam{{Key: "factor", Label: "Factor", Type: "number", Min: ptr(1.0), Max: ptr(10.0), Step: ptr(1.0), Default: 2.0}},
+		Params:           []api.ScenarioParam{{Key: "factor", Label: "Factor", Type: "number", Min: ptr(1.0), Max: ptr(10.0), Step: ptr(1.0), Default: 2.0}},
 		ExpectedSymptoms: []string{"orders/s rises"}, Dashboards: []api.DashboardLink{}},
 	{ID: ScenarioBrokerStop, Name: "Fake Broker Stop", Description: "Pretends to stop a broker (fake engine).",
 		Category: "broker", Severity: "high", Destructive: true, DefaultDurationSec: 120,
-		Params:           []api.ScenarioParam{{Key: "broker", Label: "Broker", Type: "broker", Default: 1.0}},
+		Params:           []api.ScenarioParam{{Key: "broker", Label: "Broker", Type: "broker", Options: []string{"0", "1", "2"}, Default: 1.0}},
 		ExpectedSymptoms: []string{"under-replicated partitions"}, Dashboards: []api.DashboardLink{}},
 }
 
@@ -93,7 +93,7 @@ func (f *Fake) Start(_ context.Context, req api.StartRequest) (api.Experiment, e
 		dur = def.DefaultDurationSec
 	}
 	f.seq++
-	e := &api.Experiment{ID: "exp-" + strconv.Itoa(f.seq), Scenario: def.ID, Name: def.Name, Status: api.StatusRunning,
+	e := &api.Experiment{ID: "exp-" + strconv.Itoa(f.seq), Scenario: def.ID, Name: def.Name, Category: def.Category, Severity: def.Severity, Status: api.StatusRunning,
 		Params: maps.Clone(req.Params), CreatedAt: now, StartsAt: now.Add(time.Duration(req.StartDelaySec) * time.Second),
 		AutoRecover: req.AutoRecover, Affected: []string{}, Observations: []api.Observation{}}
 	if e.Params == nil {
@@ -370,7 +370,7 @@ func (f *Fake) refresh() {
 			e.Status = api.StatusRunning
 			f.publishExperiment(e)
 		}
-		if e.Status == api.StatusRunning && !now.Before(e.EndsAt) {
+		if e.Status == api.StatusRunning && e.AutoRecover && !now.Before(e.EndsAt) {
 			f.end(e, api.StatusCompleted)
 		}
 	}
@@ -412,7 +412,7 @@ func (d drills) Start(_ context.Context, difficulty, player string) (api.Drill, 
 		return api.Drill{}, fmt.Errorf("%w: difficulty %q", api.ErrInvalid, difficulty)
 	}
 	if f.drill != nil && f.drill.Status == "running" {
-		return api.Drill{}, fmt.Errorf("%w: a drill is already running", api.ErrConflict)
+		return api.Drill{}, fmt.Errorf("%w: finish it first", api.ErrDrillActive)
 	}
 	f.seq++
 	f.drill = &api.Drill{ID: "drill-" + strconv.Itoa(f.seq), Status: "running", Difficulty: difficulty, StartedAt: f.now(),
@@ -452,7 +452,7 @@ func (d drills) Reveal(_ context.Context, id string) (api.Drill, error) {
 func (d drills) Leaderboard() []api.LeaderboardEntry {
 	d.f.mu.Lock()
 	defer d.f.mu.Unlock()
-	return slices.Clone(d.f.board)
+	return append([]api.LeaderboardEntry{}, d.f.board...)
 }
 
 func (d drills) Current() *api.Drill {
@@ -474,7 +474,7 @@ func (d drills) update(id string, fn func(*api.Drill)) (api.Drill, error) {
 		return api.Drill{}, fmt.Errorf("%w: drill %q", api.ErrNotFound, id)
 	}
 	if f.drill.Status != "running" {
-		return api.Drill{}, fmt.Errorf("%w: the drill has ended", api.ErrConflict)
+		return api.Drill{}, fmt.Errorf("%w: %s", api.ErrDrillFinished, f.drill.Status)
 	}
 	fn(f.drill)
 	return d.changed(), nil

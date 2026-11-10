@@ -69,8 +69,8 @@ func healthyLab() *fakeVM {
 	return &fakeVM{result: map[string][]series{
 		q.OrdersPerSec: one("50"), q.RevenuePerMin: one("2670"), q.PaymentSuccessRate: one("0.95"),
 		q.ReservationSuccessRate: one("0.98"), q.E2EP95Ms: one("420"), q.InFlight: one("37"), q.DlqPerMin: one("NaN"),
-		q.BrokerUp:      {broker("0", "1"), broker("1", "1"), {labels: map[string]string{"pod": "kafka-lab-dual-role-2"}, value: "1"}},
-		q.BrokerLeaders: {broker("0", "20"), broker("1", "20"), broker("2", "23"), {labels: map[string]string{"pod": "strimzi"}, value: "9"}},
+		q.BrokerUp:              {broker("0", "1"), broker("1", "1"), {labels: map[string]string{"pod": "kafka-lab-dual-role-2"}, value: "1"}},
+		q.BrokerLeaders:         {broker("0", "20"), broker("1", "20"), broker("2", "23"), {labels: map[string]string{"pod": "strimzi"}, value: "9"}},
 		q.BrokerController:      {broker("0", "0"), broker("1", "1"), broker("2", "0")},
 		q.BrokerUnderReplicated: {broker("0", "0"), broker("1", "0"), broker("2", "4")},
 		q.SpecReplicas:          {{labels: map[string]string{"deployment": "payment"}, value: "2"}, {labels: map[string]string{"deployment": "order-generator"}, value: "1"}},

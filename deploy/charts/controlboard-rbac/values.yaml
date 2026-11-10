@@ -1,0 +1,5 @@
+serviceAccount: controlboard
+# Namespaces the experiment engine acts in (scale deployments, delete pods, ...).
+targetNamespaces: [commerce, kafka]
+# Filled in by the experiment engine ticket. Empty = the board has no Kubernetes rights.
+rules: []
