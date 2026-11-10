@@ -1,6 +1,13 @@
 /**
  * Procedural "neon logistics hub" renderer. Reads the LiveModel every frame and draws it with
  * Graphics (normal + additive glow layer) and a handful of Text objects. No image assets.
+ *
+ * Cost model (Graphics are re-tessellated on the CPU whenever they are redrawn):
+ *  - slow layer (lane lines, stations, brokers, DLQ, lag piles, smoke/fog) is redrawn at 30 Hz —
+ *    its animations are slow, so this is visually identical to 60 Hz;
+ *  - parcels are pooled Images of two textures baked once (glow + body), tinted per event kind,
+ *    which the WebGL batcher draws in a few calls instead of ~1,200 shapes per frame;
+ *  - only fast motion (conveyor ticks, trucks, effects, chaos weather) is redrawn every frame.
  */
 import Phaser from "phaser";
 import type { EventBus as Bus } from "../EventBus";
@@ -21,6 +28,8 @@ const BG = 0x0a0d14;
 const PANEL = 0x111723;
 const FONT = "Inter Variable, Inter, system-ui, sans-serif";
 const MONO = "JetBrains Mono, ui-monospace, monospace";
+/** Size of the baked parcel textures; scaled down per parcel, so edges stay smooth. */
+const PARCEL_TEX = 32;
 
 function hash(n: number): number {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
@@ -33,6 +42,10 @@ export class LiveScene extends Phaser.Scene {
   private glow!: Phaser.GameObjects.Graphics;
   private main!: Phaser.GameObjects.Graphics;
   private fx!: Phaser.GameObjects.Graphics;
+  private fast!: Phaser.GameObjects.Graphics;
+  private parcelGlow: Phaser.GameObjects.Image[] = [];
+  private parcelBody: Phaser.GameObjects.Image[] = [];
+  private lastSlow = -Infinity;
   private stationText = new Map<string, { name: Phaser.GameObjects.Text; info: Phaser.GameObjects.Text }>();
   private brokerText: Phaser.GameObjects.Text[] = [];
   private dlqText!: Phaser.GameObjects.Text;
@@ -58,13 +71,15 @@ export class LiveScene extends Phaser.Scene {
     this.bg.generateTexture("hub-bg", WORLD.width, WORLD.height);
     this.bg.destroy();
     this.add.image(0, 0, "hub-bg").setOrigin(0, 0);
-    this.lanesG = this.add.graphics();
-    this.glow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
-    this.main = this.add.graphics();
-    this.fx = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
+    this.bakeParcelTextures();
+    this.lanesG = this.add.graphics().setDepth(1);
+    this.glow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(2);
+    this.main = this.add.graphics().setDepth(4);
+    this.fast = this.add.graphics().setDepth(6);
+    this.fx = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(7);
 
     const text = (x: number, y: number, s: string, size: number, color: string, font = FONT, weight = "600") =>
-      this.add.text(x, y, s, { fontFamily: font, fontSize: `${size}px`, color, fontStyle: weight }).setOrigin(0.5);
+      this.add.text(x, y, s, { fontFamily: font, fontSize: `${size}px`, color, fontStyle: weight }).setOrigin(0.5).setDepth(8);
 
     for (const st of this.model.stations) {
       // Notification and payment labels sit above the station: lanes and lag piles arrive from below.
@@ -103,18 +118,25 @@ export class LiveScene extends Phaser.Scene {
     m.step(delta);
     const t = m.time;
     this.waitingText.setVisible(!m.hasTick);
-    this.drawLanes(t);
-    this.glow.clear();
-    this.main.clear();
+    if (time - this.lastSlow >= 33) {
+      this.lastSlow = time;
+      this.lanesG.clear();
+      this.glow.clear();
+      this.main.clear();
+      this.drawLaneLines();
+      for (const s of m.stations) this.drawStation(s, t);
+      for (const b of m.brokers) this.drawBroker(b, t);
+      this.drawDlq(t);
+      for (const lane of m.lanes) this.drawPile(lane);
+      for (const w of m.weather) if (w.kind === "smoke" || w.kind === "fog") this.drawWeather(w, t);
+    }
+    this.fast.clear();
     this.fx.clear();
-    for (const s of m.stations) this.drawStation(s, t);
-    for (const b of m.brokers) this.drawBroker(b, t);
-    this.drawDlq(t);
-    for (const lane of m.lanes) this.drawPile(lane);
+    this.drawConveyorTicks(t);
     this.drawTrucks();
     this.drawParcels();
     for (const e of m.effects.live) this.drawEffect(e);
-    for (const w of m.weather) this.drawWeather(w, t);
+    for (const w of m.weather) if (w.kind !== "smoke" && w.kind !== "fog") this.drawWeather(w, t);
     // Labels refresh on wall-clock time (twice a second), independent of the model clock.
     if (time - this.lastInfo > 500) {
       this.lastInfo = time;
@@ -152,9 +174,8 @@ export class LiveScene extends Phaser.Scene {
 
   // ------------------------------------------------------------------ lanes & piles
 
-  private drawLanes(t: number): void {
+  private drawLaneLines(): void {
     const g = this.lanesG;
-    g.clear();
     for (const lane of this.model.lanes) {
       const pts = lane.path.points;
       g.lineStyle(1.4, lane.color, 0.14 + lane.activity * 0.35);
@@ -162,16 +183,22 @@ export class LiveScene extends Phaser.Scene {
       g.moveTo(pts[0]!.x, pts[0]!.y);
       for (let i = 1; i < pts.length; i++) g.lineTo(pts[i]!.x, pts[i]!.y);
       g.strokePath();
-      // moving conveyor ticks
-      if (!this.reducedMotion && lane.activity > 0.05) {
-        const step = 0.1;
-        const off = ((t / 2400) % step) / 1;
-        g.fillStyle(lane.color, 0.35 * lane.activity);
-        for (let f = off; f < 1; f += step) {
-          const i = Math.floor(f * (pts.length - 1));
-          const p = pts[i]!;
-          g.fillRect(p.x - 1, p.y - 1, 2, 2);
-        }
+    }
+  }
+
+  /** Moving conveyor ticks (every frame; small rects are cheap). */
+  private drawConveyorTicks(t: number): void {
+    if (this.reducedMotion) return;
+    const g = this.fast;
+    const step = 0.1;
+    const off = (t / 2400) % step;
+    for (const lane of this.model.lanes) {
+      if (lane.activity <= 0.05) continue;
+      const pts = lane.path.points;
+      g.fillStyle(lane.color, 0.35 * lane.activity);
+      for (let f = off; f < 1; f += step) {
+        const p = pts[Math.floor(f * (pts.length - 1))]!;
+        g.fillRect(p.x - 1, p.y - 1, 2, 2);
       }
     }
   }
@@ -370,18 +397,44 @@ export class LiveScene extends Phaser.Scene {
 
   // ------------------------------------------------------------------ moving things
 
+  /** Bakes the two parcel textures (white; tinted per parcel) once. */
+  private bakeParcelTextures(): void {
+    const g = this.make.graphics({}, false);
+    g.fillStyle(0xffffff, 1).fillCircle(PARCEL_TEX / 2, PARCEL_TEX / 2, PARCEL_TEX / 2);
+    g.generateTexture("parcel-glow", PARCEL_TEX, PARCEL_TEX);
+    g.clear();
+    g.fillStyle(0xffffff, 1).fillRoundedRect(0, 0, PARCEL_TEX, PARCEL_TEX, PARCEL_TEX * 0.1875);
+    g.generateTexture("parcel-body", PARCEL_TEX, PARCEL_TEX);
+    g.destroy();
+  }
+
   private drawParcels(): void {
-    for (const p of this.model.parcels.live) {
+    const live = this.model.parcels.live;
+    while (this.parcelBody.length < live.length) {
+      this.parcelGlow.push(this.add.image(0, 0, "parcel-glow").setBlendMode(Phaser.BlendModes.ADD).setDepth(3));
+      this.parcelBody.push(this.add.image(0, 0, "parcel-body").setDepth(5));
+    }
+    for (let i = 0; i < this.parcelBody.length; i++) {
+      const p = live[i];
+      const glow = this.parcelGlow[i]!;
+      const body = this.parcelBody[i]!;
+      if (!p) {
+        if (body.visible) {
+          body.setVisible(false);
+          glow.setVisible(false);
+        }
+        continue;
+      }
       const s = p.size;
-      this.glow.fillStyle(p.color, 0.28 * p.alpha).fillCircle(p.x, p.y, s + 2);
-      this.main.fillStyle(p.color, p.alpha).fillRoundedRect(p.x - s / 2, p.y - s / 2, s, s, 1.5);
+      glow.setVisible(true).setPosition(p.x, p.y).setScale((2 * (s + 2)) / PARCEL_TEX).setTint(p.color).setAlpha(0.28 * p.alpha);
+      body.setVisible(true).setPosition(p.x, p.y).setScale(s / PARCEL_TEX).setTint(p.color).setAlpha(p.alpha);
     }
   }
 
   private drawTrucks(): void {
     for (const tr of this.model.trucks.live) {
       const { x, y } = tr;
-      const g = this.main;
+      const g = this.fast;
       g.fillStyle(0x1f1630, 1).fillRoundedRect(x - 30, y - 11, 40, 22, 3);
       g.lineStyle(1.5, COLORS.magenta, 0.95).strokeRoundedRect(x - 30, y - 11, 40, 22, 3);
       for (let i = 0; i < Math.min(3, tr.load); i++) g.fillStyle(COLORS.magenta, 0.8).fillRect(x - 26 + i * 12, y - 6, 9, 12);
@@ -389,8 +442,8 @@ export class LiveScene extends Phaser.Scene {
       g.lineStyle(1.5, COLORS.magenta, 0.95).strokeRoundedRect(x + 11, y - 9, 16, 18, 4);
       g.fillStyle(0x0a0d14, 1).fillCircle(x - 20, y + 12, 4).fillCircle(x + 18, y + 12, 4);
       const head = tr.state === "departing" ? 0.9 : 0.4;
-      this.glow.fillStyle(0xfef08a, head * 0.6).fillTriangle(x + 27, y - 4, x + 70, y - 14, x + 70, y + 10);
-      if (tr.state === "departing") this.glow.fillStyle(COLORS.magenta, 0.25).fillRect(x - 60, y - 2, 28, 4);
+      this.fx.fillStyle(0xfef08a, head * 0.6).fillTriangle(x + 27, y - 4, x + 70, y - 14, x + 70, y + 10);
+      if (tr.state === "departing") this.fx.fillStyle(COLORS.magenta, 0.25).fillRect(x - 60, y - 2, 28, 4);
     }
   }
 

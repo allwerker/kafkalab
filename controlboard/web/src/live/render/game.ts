@@ -20,7 +20,8 @@ export function startLiveGame(parent: HTMLElement, bus: typeof Bus): { destroy()
     backgroundColor: "#0a0d14",
     antialias: true,
     banner: false,
-    fps: { target: 60, smoothStep: true },
+    // limit: never render faster than 60 fps (120/144 Hz monitors would otherwise double the work).
+    fps: { target: 60, limit: 60, smoothStep: true },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene,
   });
@@ -37,16 +38,25 @@ export function startLiveGame(parent: HTMLElement, bus: typeof Bus): { destroy()
     bus.on("experiments", ({ experiments, categories }) => model.applyExperiments(experiments, categories)),
   ];
 
-  const onVisibility = () => {
-    if (document.hidden) game.loop.sleep();
+  // Sleep while the tab is hidden or the live view is scrolled out of sight.
+  let onScreen = true;
+  const sync = () => {
+    if (document.hidden || !onScreen) game.loop.sleep();
     else game.loop.wake();
   };
+  const onVisibility = () => sync();
   document.addEventListener("visibilitychange", onVisibility);
+  const observer = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver((entries) => {
+    onScreen = entries.some((e) => e.isIntersecting);
+    sync();
+  });
+  observer?.observe(parent);
 
   return {
     destroy() {
       offs.forEach((off) => off());
       document.removeEventListener("visibilitychange", onVisibility);
+      observer?.disconnect();
       bus.emit("hover", null);
       game.destroy(true);
     },
