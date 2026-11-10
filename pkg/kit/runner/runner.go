@@ -391,8 +391,8 @@ func (r *Runner) processPartition(ctx context.Context, cl *kgo.Client, topic str
 			r.cfg.Log.InfoContext(ctx, "partition moved to another pod, dropping batch", "topic", topic, "partition", partition)
 			return
 		}
-		hooks := &commitHooks{}
-		outs, stats, err := r.processBatch(context.WithValue(ctx, commitKey{}, hooks), topic, recs, rejected)
+		bctx, batch := NewBatch(ctx)
+		outs, stats, err := r.processBatch(bctx, topic, recs, rejected)
 		var rej errRejected
 		if errors.As(err, &rej) {
 			rejected[rej.id] = rej.err
@@ -409,7 +409,7 @@ func (r *Runner) processPartition(ctx context.Context, cl *kgo.Client, topic str
 			reason = "registry"
 		}
 		if err == nil {
-			hooks.run()
+			batch.runAfter()
 			cl.MarkCommitRecords(recs[len(recs)-1])
 			r.record(topic, stats, start)
 			return
@@ -500,6 +500,9 @@ func (r *Runner) processBatch(ctx context.Context, topic string, recs []*kgo.Rec
 				stats.dlqReasons[it.result]++
 			}
 			outs = append(outs, it.outs...)
+		}
+		if err := BatchOf(ctx).RunBeforeCommit(ctx, tx); err != nil {
+			return err
 		}
 		_, err = tx.Exec(ctx, `UPDATE processed_events p SET outputs = v.o::jsonb
 			FROM unnest($1::text[], $2::text[]) AS v(id, o) WHERE p.event_id = v.id`, ids, raws)

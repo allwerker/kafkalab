@@ -316,3 +316,69 @@ func Test_shouldExplainTheRejectionWhenARecordIsRejected(t *testing.T) {
 		t.Fatalf("got %q", err.Error())
 	}
 }
+
+func Test_shouldWriteBatchStateOnceBeforeCommitWhenSeveralOrdersShareIt(t *testing.T) {
+	// GIVEN: a handler that counts orders in a batch-scoped tally and writes it once per batch
+	h := newHarness(t)
+	if _, err := h.db.Pool.Exec(context.Background(), `CREATE TABLE tallies (n int NOT NULL)`); err != nil {
+		t.Fatal(err)
+	}
+	type tally struct{ n int }
+	var writes atomic.Int64
+	for i := 0; i < 5; i++ {
+		h.produce(order(fmt.Sprintf("o-tally-%d", i), 1))
+	}
+
+	// WHEN: the service processes the orders
+	h.start(h.runner(HandlerFunc(func(ctx context.Context, _ pgx.Tx, _ Input) ([]Output, error) {
+		b := BatchOf(ctx)
+		tl := b.Value("tally", func() any {
+			t := &tally{}
+			b.BeforeCommit(func(ctx context.Context, tx pgx.Tx) error {
+				writes.Add(1)
+				_, err := tx.Exec(ctx, `INSERT INTO tallies VALUES ($1)`, t.n)
+				return err
+			})
+			return t
+		}).(*tally)
+		tl.n++
+		return nil, nil
+	})))
+	h.eventually("all processed", func() bool {
+		var sum int
+		_ = h.db.Pool.QueryRow(context.Background(), `SELECT COALESCE(sum(n),0) FROM tallies`).Scan(&sum)
+		return sum == 5
+	})
+
+	// THEN: every order is counted exactly once, with one write per batch rather than per order
+	if writes.Load() > 3 {
+		t.Fatalf("expected at most one write per partition batch, got %d", writes.Load())
+	}
+}
+
+func Test_shouldRetryTheBatchWhenItsBeforeCommitWorkFails(t *testing.T) {
+	// GIVEN: a handler whose batch-level write fails once
+	h := newHarness(t)
+	var attempts, calls atomic.Int64
+	h.start(h.runner(HandlerFunc(func(ctx context.Context, _ pgx.Tx, _ Input) ([]Output, error) {
+		calls.Add(1)
+		BatchOf(ctx).BeforeCommit(func(context.Context, pgx.Tx) error {
+			if attempts.Add(1) == 1 {
+				return errors.New("connection refused")
+			}
+			return nil
+		})
+		return nil, nil
+	})))
+
+	// WHEN: an order arrives
+	h.produce(order("o-before", 1))
+
+	// THEN: the batch is rolled back, retried and then processed
+	h.eventually("processed", func() bool {
+		return h.hasMetric(`lab_records_processed_total{topic="orders.created",result="ok"} 1`)
+	})
+	if calls.Load() != 2 {
+		t.Fatalf("handler ran %d times", calls.Load())
+	}
+}
