@@ -1,0 +1,54 @@
+# Kafka monitoring bundle — adapter for Kafka on plain Kubernetes (no Strimzi), Prometheus Operator.
+# Example: Bitnami / Confluent / self-made StatefulSets that run the JMX exporter java agent with
+# monitoring/bundle/jmx/kafka-jmx-exporter.yaml on a container port named "metrics".
+#
+# Label contract (monitoring/bundle/README.md):
+#   kafka_cluster  the cluster name   <- pod label app.kubernetes.io/instance (adjust to your labels)
+#   kafka_broker   the broker/node id <- ordinal suffix of the StatefulSet pod name (kafka-2 -> 2)
+# VictoriaMetrics operator users: same content as VMPodScrape, `relabelings` -> `relabelConfigs`.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kafka-brokers
+  labels:
+    app.kubernetes.io/part-of: kafka-monitoring-bundle
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kafka            # adjust: label shared by all broker pods
+  podMetricsEndpoints:
+    - port: metrics                            # adjust: container port of the JMX exporter agent
+      path: /metrics
+      interval: 15s                            # bundle alert KafkaJMXScrapeSlow assumes 15 s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+          targetLabel: kafka_cluster
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          regex: '.*-([0-9]+)$'
+          targetLabel: kafka_broker
+          replacement: '$1'
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+---
+# KMinion (lag, topic sizes, end-to-end probe). One KMinion per Kafka cluster; it does not know the
+# cluster name, so the scrape sets kafka_cluster.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kminion
+  labels:
+    app.kubernetes.io/part-of: kafka-monitoring-bundle
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kminion
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      relabelings:
+        - targetLabel: kafka_cluster
+          replacement: my-kafka                # adjust: must equal the brokers' kafka_cluster

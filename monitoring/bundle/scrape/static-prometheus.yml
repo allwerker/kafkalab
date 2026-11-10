@@ -1,0 +1,43 @@
+# Kafka monitoring bundle — adapter for Kafka on VMs / bare metal (no Kubernetes).
+# A `scrape_configs` fragment for prometheus.yml or vmagent's -promscrape.config.
+# Each broker runs the JMX exporter java agent with monitoring/bundle/jmx/kafka-jmx-exporter.yaml:
+#   KAFKA_OPTS="-javaagent:/opt/jmx_prometheus_javaagent.jar=9404:/etc/kafka/kafka-jmx-exporter.yaml"
+#
+# Label contract (monitoring/bundle/README.md): kafka_cluster on every Kafka series, kafka_broker
+# (= node.id) on broker series. Here both are set per target, which is the most robust option for
+# static fleets. Without Kubernetes the "Kafka · Pods & Nodes" dashboard stays empty except for its
+# node-exporter row; all other bundle dashboards work unchanged.
+scrape_configs:
+  - job_name: kafka-brokers
+    scrape_interval: 15s                       # bundle alert KafkaJMXScrapeSlow assumes 15 s
+    static_configs:
+      - targets: ["kafka-1.example.net:9404"]
+        labels: { kafka_cluster: prod-eu, kafka_broker: "1" }
+      - targets: ["kafka-2.example.net:9404"]
+        labels: { kafka_cluster: prod-eu, kafka_broker: "2" }
+      - targets: ["kafka-3.example.net:9404"]
+        labels: { kafka_cluster: prod-eu, kafka_broker: "3" }
+
+  # Alternative for big fleets: derive the labels from the host name (kafka-<cluster>-<id>.example.net)
+  - job_name: kafka-brokers-file-sd
+    scrape_interval: 15s
+    file_sd_configs:
+      - files: [/etc/prometheus/kafka-*.json]
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: 'kafka-([a-z0-9-]+)-([0-9]+)\..*'
+        target_label: kafka_cluster
+        replacement: '$1'
+      - source_labels: [__address__]
+        regex: 'kafka-([a-z0-9-]+)-([0-9]+)\..*'
+        target_label: kafka_broker
+        replacement: '$2'
+
+  - job_name: kminion
+    static_configs:
+      - targets: ["kminion.example.net:8080"]
+        labels: { kafka_cluster: prod-eu }
+
+  - job_name: node-exporter
+    static_configs:
+      - targets: ["kafka-1.example.net:9100", "kafka-2.example.net:9100", "kafka-3.example.net:9100"]

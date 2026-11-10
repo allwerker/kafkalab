@@ -1,0 +1,206 @@
+# Kafka monitoring bundle — metric catalog.
+#
+# Every metric used by a bundle dashboard or bundle rule, with its source and meaning. Checked by
+# `make dashboards-lint` (monitoring/dashgen):
+#   * a bundle query using a metric that is not listed here fails the lint,
+#   * an entry not used by any bundle dashboard/rule fails the lint (the catalog stays exact),
+#   * entries of a source with fixtures must appear in at least one recorded scrape
+#     (fixtures/*.prom, re-record with fixtures/record.sh against a running lab).
+# Sources: jmx (Strimzi/Prometheus JMX exporter agent in the broker, monitoring/bundle/jmx),
+# kminion (KMinion v2.5 over the Kafka admin API), node (node-exporter), cadvisor (kubelet
+# cAdvisor), ksm (kube-state-metrics), kubelet (kubelet volume stats), vmagent (series the scraper
+# adds per target), rules (recording rules / ALERTS written by the rule evaluator).
+# Label contract: every Kafka series carries kafka_cluster; broker series also kafka_broker (node
+# id) — see monitoring/bundle/README.md.
+fixtures:
+  jmx: [fixtures/jmx-broker-*.prom]
+  kminion: [fixtures/kminion.prom]
+  node: [fixtures/node-exporter.prom]
+  cadvisor: [fixtures/cadvisor-kafka.prom]
+  ksm: [fixtures/kube-state-metrics-kafka.prom]
+  kubelet: [fixtures/kubelet-kafka.prom]
+  vmagent: [fixtures/vmagent-kafka.prom]
+metrics:
+  # ---------------------------------------------------------------- broker state & replication
+  kafka_server_kafkaserver_brokerstate: {source: jmx, type: gauge, mbean: "kafka.server:type=KafkaServer,name=BrokerState", meaning: "Broker lifecycle state: 0 not running, 1 starting, 2 recovering from unclean shutdown, 3 running, 6 pending controlled shutdown, 7 shutting down."}
+  kafka_server_replicamanager_leadercount: {source: jmx, type: gauge, mbean: "kafka.server:type=ReplicaManager,name=LeaderCount", meaning: "Partitions this broker leads (serves client traffic for)."}
+  kafka_server_replicamanager_partitioncount: {source: jmx, type: gauge, mbean: "kafka.server:type=ReplicaManager,name=PartitionCount", meaning: "Partition replicas hosted by this broker (leaders and followers)."}
+  kafka_server_replicamanager_underreplicatedpartitions: {source: jmx, type: gauge, mbean: "kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions", meaning: "Partitions led by this broker whose ISR is smaller than the replica set."}
+  kafka_server_replicamanager_underminisrpartitioncount: {source: jmx, type: gauge, mbean: "kafka.server:type=ReplicaManager,name=UnderMinIsrPartitionCount", meaning: "Partitions led by this broker with fewer in-sync replicas than min.insync.replicas (acks=all writes fail)."}
+  kafka_server_replicamanager_atminisrpartitioncount: {source: jmx, type: gauge, mbean: "kafka.server:type=ReplicaManager,name=AtMinIsrPartitionCount", meaning: "Partitions led by this broker with exactly min.insync.replicas in sync: one more failure stops writers."}
+  kafka_server_replicamanager_isrshrinks_total: {source: jmx, type: counter, mbean: "kafka.server:type=ReplicaManager,name=IsrShrinksPerSec", meaning: "Replicas removed from an ISR (follower too slow or down)."}
+  kafka_server_replicamanager_isrexpands_total: {source: jmx, type: counter, mbean: "kafka.server:type=ReplicaManager,name=IsrExpandsPerSec", meaning: "Replicas added back to an ISR after catching up."}
+  kafka_server_replicamanager_failedisrupdates_total: {source: jmx, type: counter, mbean: "kafka.server:type=ReplicaManager,name=FailedIsrUpdatesPerSec", meaning: "ISR changes the controller rejected (stale epochs, controller unavailable)."}
+  kafka_server_replicafetchermanager_maxlag: {source: jmx, type: gauge, labels: [clientId], mbean: "kafka.server:type=ReplicaFetcherManager,name=MaxLag,clientId=Replica", meaning: "Largest message lag of any partition this broker replicates as follower."}
+  kafka_server_replicafetchermanager_deadthreadcount: {source: jmx, type: gauge, labels: [clientId], mbean: "kafka.server:type=ReplicaFetcherManager,name=DeadThreadCount", meaning: "Replica fetcher threads that died (a follower stops replicating)."}
+  kafka_server_replicafetchermanager_failedpartitionscount: {source: jmx, type: gauge, labels: [clientId], mbean: "kafka.server:type=ReplicaFetcherManager,name=FailedPartitionsCount", meaning: "Partitions whose replication failed with an unrecoverable error on this follower."}
+  kafka_log_logmanager_offlinelogdirectorycount: {source: jmx, type: gauge, mbean: "kafka.log:type=LogManager,name=OfflineLogDirectoryCount", meaning: "Log directories marked offline after I/O errors."}
+  kafka_log_logflushstats_logflushrateandtimems: {source: jmx, type: summary, labels: [quantile], mbean: "kafka.log:type=LogFlushStats,name=LogFlushRateAndTimeMs", meaning: "Time to fsync log segments (p50/p99/p99.9 of a decaying reservoir), ms."}
+  kafka_log_logcleanermanager_max_dirty_percent: {source: jmx, type: gauge, mbean: "kafka.log:type=LogCleanerManager,name=max-dirty-percent", meaning: "Dirty ratio of the dirtiest compacted log (how much is waiting for compaction)."}
+  kafka_log_logcleanermanager_uncleanable_partitions_count: {source: jmx, type: gauge, labels: [logDirectory], mbean: "kafka.log:type=LogCleanerManager,name=uncleanable-partitions-count", meaning: "Compacted partitions the cleaner gave up on after errors."}
+  # ---------------------------------------------------------------- traffic (BrokerTopicMetrics; series without topic label = broker total)
+  kafka_server_brokertopicmetrics_messagesin_total: {source: jmx, type: counter, labels: [topic], mbean: "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec", meaning: "Records appended by this broker as leader (no replication)."}
+  kafka_server_brokertopicmetrics_bytesin_total: {source: jmx, type: counter, labels: [topic], mbean: "kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec", meaning: "Bytes produced by clients to this broker."}
+  kafka_server_brokertopicmetrics_bytesout_total: {source: jmx, type: counter, labels: [topic], mbean: "kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec", meaning: "Bytes fetched by consumers from this broker (replication excluded)."}
+  kafka_server_brokertopicmetrics_bytesrejected_total: {source: jmx, type: counter, labels: [topic], mbean: "kafka.server:type=BrokerTopicMetrics,name=BytesRejectedPerSec", meaning: "Bytes rejected, e.g. record batches larger than message.max.bytes."}
+  kafka_server_brokertopicmetrics_replicationbytesin_total: {source: jmx, type: counter, mbean: "kafka.server:type=BrokerTopicMetrics,name=ReplicationBytesInPerSec", meaning: "Bytes this broker fetched as follower from leaders."}
+  kafka_server_brokertopicmetrics_replicationbytesout_total: {source: jmx, type: counter, mbean: "kafka.server:type=BrokerTopicMetrics,name=ReplicationBytesOutPerSec", meaning: "Bytes this broker served to its followers."}
+  kafka_server_brokertopicmetrics_reassignmentbytesin_total: {source: jmx, type: counter, mbean: "kafka.server:type=BrokerTopicMetrics,name=ReassignmentBytesInPerSec", meaning: "Bytes copied to this broker by partition reassignments."}
+  kafka_server_brokertopicmetrics_totalproducerequests_total: {source: jmx, type: counter, labels: [topic], mbean: "kafka.server:type=BrokerTopicMetrics,name=TotalProduceRequestsPerSec", meaning: "Produce requests (per topic partition batch) handled."}
+  kafka_server_brokertopicmetrics_totalfetchrequests_total: {source: jmx, type: counter, labels: [topic], mbean: "kafka.server:type=BrokerTopicMetrics,name=TotalFetchRequestsPerSec", meaning: "Fetch requests (consumer and follower) handled per topic."}
+  kafka_server_brokertopicmetrics_failedproducerequests_total: {source: jmx, type: counter, labels: [topic], mbean: "kafka.server:type=BrokerTopicMetrics,name=FailedProduceRequestsPerSec", meaning: "Produce requests that failed inside the broker."}
+  kafka_server_brokertopicmetrics_failedfetchrequests_total: {source: jmx, type: counter, labels: [topic], mbean: "kafka.server:type=BrokerTopicMetrics,name=FailedFetchRequestsPerSec", meaning: "Fetch requests that failed inside the broker."}
+  kafka_server_brokertopicmetrics_invalidoffsetorsequencerecords_total: {source: jmx, type: counter, mbean: "kafka.server:type=BrokerTopicMetrics,name=InvalidOffsetOrSequenceRecordsPerSec", meaning: "Records rejected for out-of-order sequence numbers (idempotent producers) or invalid offsets."}
+  kafka_server_brokertopicmetrics_invalidmessagecrcrecords_total: {source: jmx, type: counter, mbean: "kafka.server:type=BrokerTopicMetrics,name=InvalidMessageCrcRecordsPerSec", meaning: "Records rejected because of a CRC mismatch (corruption in transit or client bug)."}
+  # ---------------------------------------------------------------- request processing
+  kafka_network_requestmetrics_requests_total: {source: jmx, type: counter, labels: [request, version], mbean: "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=*,version=*", meaning: "Requests received per API key (and version)."}
+  kafka_network_requestmetrics_errors_total: {source: jmx, type: counter, labels: [request, error], mbean: "kafka.network:type=RequestMetrics,name=ErrorsPerSec,request=*,error=*", meaning: "Responses per API key and error code (NONE = success)."}
+  kafka_network_requestmetrics_totaltimems: {source: jmx, type: summary, labels: [request, quantile], mbean: "kafka.network:type=RequestMetrics,name=TotalTimeMs", meaning: "Total time a request spends in the broker, p50/p99/p99.9 (ms, decaying ~5 min reservoir)."}
+  kafka_network_requestmetrics_totaltimems_count: {source: jmx, type: untyped, labels: [request], mbean: "kafka.network:type=RequestMetrics,name=TotalTimeMs", meaning: "Number of requests measured per API key (used to discover request types)."}
+  kafka_network_requestmetrics_requestqueuetimems: {source: jmx, type: summary, labels: [request, quantile], mbean: "kafka.network:type=RequestMetrics,name=RequestQueueTimeMs", meaning: "Time waiting in the request queue for an I/O thread (ms)."}
+  kafka_network_requestmetrics_localtimems: {source: jmx, type: summary, labels: [request, quantile], mbean: "kafka.network:type=RequestMetrics,name=LocalTimeMs", meaning: "Time processed on the leader: log append / read (ms)."}
+  kafka_network_requestmetrics_remotetimems: {source: jmx, type: summary, labels: [request, quantile], mbean: "kafka.network:type=RequestMetrics,name=RemoteTimeMs", meaning: "Time waiting for followers (acks=all) or in fetch purgatory (fetch.min.bytes / max.wait) (ms)."}
+  kafka_network_requestmetrics_responsequeuetimems: {source: jmx, type: summary, labels: [request, quantile], mbean: "kafka.network:type=RequestMetrics,name=ResponseQueueTimeMs", meaning: "Time waiting in the response queue for a network thread (ms)."}
+  kafka_network_requestmetrics_responsesendtimems: {source: jmx, type: summary, labels: [request, quantile], mbean: "kafka.network:type=RequestMetrics,name=ResponseSendTimeMs", meaning: "Time sending the response to the client (ms)."}
+  kafka_network_requestmetrics_throttletimems: {source: jmx, type: summary, labels: [request, quantile], mbean: "kafka.network:type=RequestMetrics,name=ThrottleTimeMs", meaning: "Time requests were delayed by client quotas (ms)."}
+  kafka_network_requestchannel_requestqueuesize: {source: jmx, type: gauge, mbean: "kafka.network:type=RequestChannel,name=RequestQueueSize", meaning: "Requests waiting for an I/O thread."}
+  kafka_network_requestchannel_responsequeuesize: {source: jmx, type: gauge, labels: [processor], mbean: "kafka.network:type=RequestChannel,name=ResponseQueueSize", meaning: "Responses waiting for a network thread (per processor; series without processor = total)."}
+  kafka_server_kafkarequesthandlerpool_requesthandleravgidlepercent_count: {source: jmx, type: untyped, mbean: "kafka.server:type=KafkaRequestHandlerPool,name=RequestHandlerAvgIdlePercent (Count)", meaning: "Cumulative idle time of the request handler threads in ns divided by the thread count: rate()/1e9 = idle share."}
+  kafka_server_kafkarequesthandlerpool_controllerrequesthandleravgidlepercent_count: {source: jmx, type: untyped, mbean: "kafka.server:type=KafkaRequestHandlerPool,name=ControllerRequestHandlerAvgIdlePercent (Count)", meaning: "Like the request handler idle counter, for the controller's request handler pool on combined nodes."}
+  kafka_network_socketserver_networkprocessoravgidle_percent: {source: jmx, type: gauge, mbean: "kafka.network:type=SocketServer,name=NetworkProcessorAvgIdlePercent", meaning: "Average idle share of the network threads (0..1)."}
+  kafka_server_delayedoperationpurgatory_purgatorysize: {source: jmx, type: gauge, labels: [delayedOperation], mbean: "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize", meaning: "Requests parked in a purgatory (Produce waiting for acks, Fetch waiting for data)."}
+  kafka_server_delayedoperationpurgatory_numdelayedoperations: {source: jmx, type: gauge, labels: [delayedOperation], mbean: "kafka.server:type=DelayedOperationPurgatory,name=NumDelayedOperations", meaning: "Delayed operations not yet completed."}
+  kafka_server_fetchsessioncache_numincrementalfetchsessions: {source: jmx, type: gauge, mbean: "kafka.server:type=FetchSessionCache,name=NumIncrementalFetchSessions", meaning: "Incremental fetch sessions cached (KIP-227)."}
+  kafka_server_fetchsessioncache_incrementalfetchsessionevictions_total: {source: jmx, type: counter, mbean: "kafka.server:type=FetchSessionCache,name=IncrementalFetchSessionEvictionsPerSec", meaning: "Fetch sessions evicted because the cache is full."}
+  kafka_server_group_coordinator_metrics_thread_idle_ratio_avg: {source: jmx, type: gauge, mbean: "kafka.server:type=group-coordinator-metrics (thread-idle-ratio-avg)", meaning: "Idle ratio of the group coordinator runtime threads (Kafka 4 group coordinator)."}
+  # ---------------------------------------------------------------- connections
+  kafka_server_socketservermetrics_connection_count: {source: jmx, type: gauge, labels: [listener, networkProcessor], mbean: "kafka.server:type=socket-server-metrics,listener=*,networkProcessor=*", meaning: "Open connections per listener and network thread."}
+  kafka_server_socketservermetrics_connection_creation_total: {source: jmx, type: counter, labels: [listener, networkProcessor], mbean: "kafka.server:type=socket-server-metrics (connection-creation-total)", meaning: "Connections opened."}
+  kafka_server_socketservermetrics_connection_close_total: {source: jmx, type: counter, labels: [listener, networkProcessor], mbean: "kafka.server:type=socket-server-metrics (connection-close-total)", meaning: "Connections closed."}
+  kafka_server_socketservermetrics_failed_authentication_total: {source: jmx, type: counter, labels: [listener, networkProcessor], mbean: "kafka.server:type=socket-server-metrics (failed-authentication-total)", meaning: "Failed SASL/TLS authentications."}
+  kafka_server_socketservermetrics_incoming_byte_total: {source: jmx, type: counter, labels: [listener, networkProcessor], mbean: "kafka.server:type=socket-server-metrics (incoming-byte-total)", meaning: "Bytes received by the socket server."}
+  kafka_server_socketservermetrics_outgoing_byte_total: {source: jmx, type: counter, labels: [listener, networkProcessor], mbean: "kafka.server:type=socket-server-metrics (outgoing-byte-total)", meaning: "Bytes sent by the socket server."}
+  kafka_server_socketservermetrics_io_ratio: {source: jmx, type: gauge, labels: [listener, networkProcessor], mbean: "kafka.server:type=socket-server-metrics (io-ratio)", meaning: "Share of time the network thread does I/O."}
+  kafka_server_socketservermetrics_io_wait_ratio: {source: jmx, type: gauge, labels: [listener, networkProcessor], mbean: "kafka.server:type=socket-server-metrics (io-wait-ratio)", meaning: "Share of time the network thread waits for I/O readiness."}
+  # ---------------------------------------------------------------- KRaft controller & quorum
+  kafka_controller_kafkacontroller_activecontrollercount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=ActiveControllerCount", meaning: "1 on the active controller, 0 elsewhere."}
+  kafka_controller_kafkacontroller_activebrokercount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=ActiveBrokerCount", meaning: "Registered, unfenced brokers (meaningful on the active controller)."}
+  kafka_controller_kafkacontroller_fencedbrokercount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=FencedBrokerCount", meaning: "Registered brokers fenced for missing heartbeats."}
+  kafka_controller_kafkacontroller_offlinepartitionscount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=OfflinePartitionsCount", meaning: "Partitions without a leader (reported by the active controller)."}
+  kafka_controller_kafkacontroller_globalpartitioncount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=GlobalPartitionCount", meaning: "Partitions in the cluster."}
+  kafka_controller_kafkacontroller_globaltopiccount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=GlobalTopicCount", meaning: "Topics in the cluster."}
+  kafka_controller_kafkacontroller_brokerregistrationstate: {source: jmx, type: gauge, labels: [broker], mbean: "kafka.controller:type=KafkaController,name=BrokerRegistrationState,broker=*", meaning: "Registration state per broker as seen by the controller: 10 fenced, 20 controlled shutdown, 30 unfenced."}
+  kafka_controller_kafkacontroller_newactivecontrollerscount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=NewActiveControllersCount", meaning: "Controller elections this node has observed since start (monotonic gauge)."}
+  kafka_controller_kafkacontroller_eventqueueoperationstimedoutcount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=EventQueueOperationsTimedOutCount", meaning: "Controller events that timed out in the queue since start."}
+  kafka_controller_kafkacontroller_timedoutbrokerheartbeatcount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=TimedOutBrokerHeartbeatCount", meaning: "Broker heartbeats that timed out at the controller since start."}
+  kafka_controller_kafkacontroller_metadataerrorcount: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=MetadataErrorCount", meaning: "Errors applying metadata records on the controller since start."}
+  kafka_controller_kafkacontroller_lastappliedrecordlagms: {source: jmx, type: gauge, mbean: "kafka.controller:type=KafkaController,name=LastAppliedRecordLagMs", meaning: "Age of the last metadata record the controller applied (ms)."}
+  kafka_controller_controllereventmanager_eventqueuetimems: {source: jmx, type: summary, labels: [quantile], mbean: "kafka.controller:type=ControllerEventManager,name=EventQueueTimeMs", meaning: "Time controller events wait in the queue (ms)."}
+  kafka_controller_controllereventmanager_eventqueueprocessingtimems: {source: jmx, type: summary, labels: [quantile], mbean: "kafka.controller:type=ControllerEventManager,name=EventQueueProcessingTimeMs", meaning: "Time to process a controller event (ms)."}
+  kafka_controller_controllereventmanager_avgidleratio: {source: jmx, type: gauge, mbean: "kafka.controller:type=ControllerEventManager,name=AvgIdleRatio", meaning: "Idle share of the controller event thread."}
+  kafka_server_raftmetrics_current_state: {source: jmx, type: untyped, labels: [current_state], mbean: "kafka.server:type=raft-metrics (current-state)", meaning: "Raft role of this node as label value (leader, follower, observer, candidate, unattached, ...); value 1."}
+  kafka_server_raftmetrics_current_leader: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (current-leader)", meaning: "Node id of the quorum leader as seen by this node."}
+  kafka_server_raftmetrics_current_epoch: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (current-epoch)", meaning: "Current leader epoch of the metadata quorum."}
+  kafka_server_raftmetrics_number_of_voters: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (number-of-voters)", meaning: "Voters of the metadata quorum as known by this node."}
+  kafka_server_raftmetrics_number_unknown_voter_connections: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (number-unknown-voter-connections)", meaning: "Voters this node cannot connect to."}
+  kafka_server_raftmetrics_high_watermark: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (high-watermark)", meaning: "Committed offset of the metadata log."}
+  kafka_server_raftmetrics_log_end_offset: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (log-end-offset)", meaning: "End offset of the metadata log on this node."}
+  kafka_server_raftmetrics_commit_latency_avg: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (commit-latency-avg)", meaning: "Average time to commit a metadata record on the leader (ms); NaN on followers."}
+  kafka_server_raftmetrics_append_records_rate: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (append-records-rate)", meaning: "Metadata records appended per second (leader)."}
+  kafka_server_raftmetrics_fetch_records_rate: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (fetch-records-rate)", meaning: "Metadata records fetched per second (followers/observers)."}
+  kafka_server_raftmetrics_poll_idle_ratio_avg: {source: jmx, type: gauge, mbean: "kafka.server:type=raft-metrics (poll-idle-ratio-avg)", meaning: "Idle share of the Raft I/O thread."}
+  kafka_server_brokermetadatametrics_last_applied_record_lag_ms: {source: jmx, type: gauge, mbean: "kafka.server:type=broker-metadata-metrics (last-applied-record-lag-ms)", meaning: "Age of the last metadata record the broker applied (ms)."}
+  kafka_server_brokermetadatametrics_metadata_apply_error_count: {source: jmx, type: gauge, mbean: "kafka.server:type=broker-metadata-metrics (metadata-apply-error-count)", meaning: "Errors applying metadata deltas on the broker since start."}
+  kafka_server_brokermetadatametrics_metadata_load_error_count: {source: jmx, type: gauge, mbean: "kafka.server:type=broker-metadata-metrics (metadata-load-error-count)", meaning: "Errors loading metadata snapshots/records on the broker since start."}
+  # ---------------------------------------------------------------- JMX exporter, JVM and process (agent built-in collectors)
+  jmx_scrape_duration_seconds: {source: jmx, type: gauge, meaning: "Time the JMX exporter agent needed for the last collection (inside the broker JVM)."}
+  jvm_memory_used_bytes: {source: jmx, type: gauge, labels: [area], meaning: "Heap / non-heap memory in use."}
+  jvm_memory_committed_bytes: {source: jmx, type: gauge, labels: [area], meaning: "Heap / non-heap memory committed by the JVM."}
+  jvm_memory_max_bytes: {source: jmx, type: gauge, labels: [area], meaning: "Maximum heap (-Xmx) / non-heap memory."}
+  jvm_memory_pool_used_bytes: {source: jmx, type: gauge, labels: [pool], meaning: "Memory in use per pool (eden, survivor, old gen, metaspace, code heap)."}
+  jvm_memory_pool_collection_used_bytes: {source: jmx, type: gauge, labels: [pool], meaning: "Memory in use per heap pool right after the last GC (live data)."}
+  jvm_memory_pool_allocated_bytes_total: {source: jmx, type: counter, labels: [pool], meaning: "Bytes allocated per pool (eden = allocation rate, old gen = promotion)."}
+  jvm_gc_collection_seconds_sum: {source: jmx, type: summary, labels: [gc], meaning: "Time spent per garbage collector (G1 Concurrent GC is concurrent, not a pause)."}
+  jvm_gc_collection_seconds_count: {source: jmx, type: summary, labels: [gc], meaning: "Collections per garbage collector."}
+  jvm_threads_current: {source: jmx, type: gauge, meaning: "Live JVM threads."}
+  jvm_threads_deadlocked: {source: jmx, type: gauge, meaning: "Threads in a deadlock."}
+  jvm_threads_state: {source: jmx, type: gauge, labels: [state], meaning: "Threads per state (RUNNABLE, BLOCKED, WAITING, ...)."}
+  jvm_buffer_pool_used_bytes: {source: jmx, type: gauge, labels: [pool], meaning: "Off-heap direct and memory-mapped buffer usage."}
+  process_cpu_seconds_total: {source: jmx, type: counter, meaning: "CPU time of the broker process."}
+  process_open_fds: {source: jmx, type: gauge, meaning: "Open file descriptors of the broker process."}
+  process_max_fds: {source: jmx, type: gauge, meaning: "File descriptor limit of the broker process."}
+  process_start_time_seconds: {source: jmx, type: gauge, meaning: "Start time of the broker process (Unix seconds)."}
+  # ---------------------------------------------------------------- KMinion (admin API, no broker JMX cost)
+  kminion_exporter_up: {source: kminion, type: gauge, meaning: "1 if KMinion's last collection from the Kafka admin API succeeded."}
+  kminion_kafka_cluster_info: {source: kminion, type: info, labels: [cluster_version, broker_count, controller_id, cluster_id], meaning: "Cluster information as labels (value 1)."}
+  kminion_kafka_broker_log_dir_size_total_bytes: {source: kminion, type: gauge, labels: [broker_id], meaning: "Size of all log directories of a broker (DescribeLogDirs)."}
+  kminion_kafka_topic_info: {source: kminion, type: info, labels: [topic_name, partition_count, replication_factor, cleanup_policy, retention_ms, retention_bytes, min_insync_replicas], meaning: "Topic configuration as labels (value 1)."}
+  kminion_kafka_topic_log_dir_size_total_bytes: {source: kminion, type: gauge, labels: [topic_name], meaning: "Bytes of a topic on all brokers, replicas included."}
+  kminion_kafka_topic_high_water_mark_sum: {source: kminion, type: gauge, labels: [topic_name], meaning: "Sum of the high watermarks of a topic's partitions (rate = committed records/s)."}
+  kminion_kafka_topic_partition_high_water_mark: {source: kminion, type: gauge, labels: [topic_name, partition_id], meaning: "High watermark per partition."}
+  kminion_kafka_topic_partition_low_water_mark: {source: kminion, type: gauge, labels: [topic_name, partition_id], meaning: "Low watermark (first retained offset) per partition."}
+  kminion_kafka_consumer_group_info: {source: kminion, type: info, labels: [group_id, state, protocol, protocol_type, coordinator_id], meaning: "Consumer group state and coordinator as labels (value 1)."}
+  kminion_kafka_consumer_group_members: {source: kminion, type: gauge, labels: [group_id], meaning: "Members of a consumer group."}
+  kminion_kafka_consumer_group_topic_assigned_partitions: {source: kminion, type: gauge, labels: [group_id, topic_name], meaning: "Partitions of a topic assigned to the group's members."}
+  kminion_kafka_consumer_group_topic_lag: {source: kminion, type: gauge, labels: [group_id, topic_name], meaning: "Messages between the group's committed offsets and the high watermarks of a topic."}
+  kminion_kafka_consumer_group_topic_partition_lag: {source: kminion, type: gauge, labels: [group_id, topic_name, partition_id], meaning: "Lag per partition."}
+  kminion_kafka_consumer_group_topic_offset_sum: {source: kminion, type: gauge, labels: [group_id, topic_name], meaning: "Sum of the group's committed offsets on a topic (rate = consume rate)."}
+  kminion_end_to_end_messages_produced_total: {source: kminion, type: counter, labels: [partition_id], meaning: "Probe messages produced."}
+  kminion_end_to_end_messages_received_total: {source: kminion, type: counter, labels: [partition_id], meaning: "Probe messages consumed back."}
+  kminion_end_to_end_messages_lost_total: {source: kminion, type: counter, labels: [partition_id], meaning: "Probe messages not received within the roundtrip SLA."}
+  kminion_end_to_end_messages_produced_failed_total: {source: kminion, type: counter, labels: [partition_id], meaning: "Probe produce requests that failed."}
+  kminion_end_to_end_messages_produced_in_flight: {source: kminion, type: gauge, labels: [partition_id], meaning: "Probe messages produced but not yet acknowledged."}
+  kminion_end_to_end_produce_latency_seconds_bucket: {source: kminion, type: histogram, labels: [partition_id, le], meaning: "Probe produce acknowledgement latency (acks=all)."}
+  kminion_end_to_end_roundtrip_latency_seconds_bucket: {source: kminion, type: histogram, labels: [partition_id, le], meaning: "Probe produce-to-consume roundtrip latency."}
+  kminion_end_to_end_offset_commit_latency_seconds_bucket: {source: kminion, type: histogram, labels: [le], meaning: "Probe consumer offset commit latency."}
+  kminion_end_to_end_offset_commits_total: {source: kminion, type: counter, meaning: "Probe consumer offset commits."}
+  kminion_end_to_end_offset_commits_failed_total: {source: kminion, type: counter, meaning: "Probe consumer offset commits that failed."}
+  # ---------------------------------------------------------------- Kubernetes: cAdvisor (container metrics of the broker pods)
+  container_cpu_usage_seconds_total: {source: cadvisor, type: counter, labels: [namespace, pod, container], meaning: "CPU time used by the container."}
+  container_cpu_cfs_periods_total: {source: cadvisor, type: counter, labels: [namespace, pod, container], meaning: "CFS scheduling periods of a container with a CPU limit."}
+  container_cpu_cfs_throttled_periods_total: {source: cadvisor, type: counter, labels: [namespace, pod, container], meaning: "CFS periods in which the container was throttled by its CPU limit."}
+  container_memory_working_set_bytes: {source: cadvisor, type: gauge, labels: [namespace, pod, container], meaning: "Working set (usage minus inactive page cache): compared with the limit for OOM / eviction."}
+  container_memory_rss: {source: cadvisor, type: gauge, labels: [namespace, pod, container], meaning: "Anonymous memory (JVM heap and off-heap)."}
+  container_memory_cache: {source: cadvisor, type: gauge, labels: [namespace, pod, container], meaning: "Page cache charged to the container (Kafka log segments)."}
+  container_oom_events_total: {source: cadvisor, type: counter, labels: [namespace, pod, container], meaning: "Out-of-memory kills in the container."}
+  container_fs_reads_bytes_total: {source: cadvisor, type: counter, labels: [namespace, pod, container, device], meaning: "Bytes read from block devices."}
+  container_fs_writes_bytes_total: {source: cadvisor, type: counter, labels: [namespace, pod, container, device], meaning: "Bytes written to block devices."}
+  container_network_receive_bytes_total: {source: cadvisor, type: counter, labels: [namespace, pod, interface], meaning: "Bytes received by the pod."}
+  container_network_transmit_bytes_total: {source: cadvisor, type: counter, labels: [namespace, pod, interface], meaning: "Bytes sent by the pod."}
+  container_network_receive_packets_dropped_total: {source: cadvisor, type: counter, labels: [namespace, pod, interface], meaning: "Received packets dropped."}
+  container_network_transmit_packets_dropped_total: {source: cadvisor, type: counter, labels: [namespace, pod, interface], meaning: "Transmitted packets dropped."}
+  container_network_receive_errors_total: {source: cadvisor, type: counter, labels: [namespace, pod, interface], meaning: "Receive errors."}
+  container_network_transmit_errors_total: {source: cadvisor, type: counter, labels: [namespace, pod, interface], meaning: "Transmit errors."}
+  container_pressure_cpu_waiting_seconds_total: {source: cadvisor, type: counter, labels: [namespace, pod, container], meaning: "PSI: time some tasks waited for CPU."}
+  container_pressure_memory_waiting_seconds_total: {source: cadvisor, type: counter, labels: [namespace, pod, container], meaning: "PSI: time some tasks were stalled on memory (reclaim)."}
+  container_pressure_io_waiting_seconds_total: {source: cadvisor, type: counter, labels: [namespace, pod, container], meaning: "PSI: time some tasks were stalled on I/O."}
+  container_pressure_io_stalled_seconds_total: {source: cadvisor, type: counter, labels: [namespace, pod, container], meaning: "PSI: time all tasks were stalled on I/O (full)."}
+  # ---------------------------------------------------------------- Kubernetes: kube-state-metrics, kubelet
+  kube_pod_container_resource_requests: {source: ksm, type: gauge, labels: [namespace, pod, container, resource], meaning: "Requested CPU / memory per container."}
+  kube_pod_container_resource_limits: {source: ksm, type: gauge, labels: [namespace, pod, container, resource], meaning: "CPU / memory limit per container."}
+  kube_pod_container_status_restarts_total: {source: ksm, type: counter, labels: [namespace, pod, container], meaning: "Container restarts."}
+  kube_pod_spec_volumes_persistentvolumeclaims_info: {source: ksm, type: info, labels: [namespace, pod, persistentvolumeclaim, volume], meaning: "Which PVC a pod mounts (joins kubelet volume stats to broker pods)."}
+  kube_persistentvolumeclaim_resource_requests_storage_bytes: {source: ksm, type: gauge, labels: [namespace, persistentvolumeclaim], meaning: "Requested size of a PVC."}
+  kubelet_volume_stats_used_bytes: {source: kubelet, type: gauge, labels: [namespace, persistentvolumeclaim], meaning: "Bytes used on a mounted persistent volume."}
+  kubelet_volume_stats_available_bytes: {source: kubelet, type: gauge, labels: [namespace, persistentvolumeclaim], meaning: "Bytes available on a mounted persistent volume."}
+  kubelet_volume_stats_capacity_bytes: {source: kubelet, type: gauge, labels: [namespace, persistentvolumeclaim], meaning: "Capacity of a mounted persistent volume (local-path volumes report the host disk)."}
+  # ---------------------------------------------------------------- nodes (node-exporter)
+  node_uname_info: {source: node, type: info, labels: [instance, nodename], meaning: "Node identity (used to list node-exporter instances)."}
+  node_cpu_seconds_total: {source: node, type: counter, labels: [instance, cpu, mode], meaning: "CPU time per core and mode."}
+  node_memory_MemAvailable_bytes: {source: node, type: gauge, labels: [instance], meaning: "Memory available for new allocations (includes reclaimable page cache)."}
+  node_memory_MemTotal_bytes: {source: node, type: gauge, labels: [instance], meaning: "Total memory of the node."}
+  node_disk_io_time_seconds_total: {source: node, type: counter, labels: [instance, device], meaning: "Time the block device was busy."}
+  node_load1: {source: node, type: gauge, labels: [instance], meaning: "1-minute load average."}
+  node_pressure_cpu_waiting_seconds_total: {source: node, type: counter, labels: [instance], meaning: "Node PSI: time some tasks waited for CPU."}
+  node_pressure_memory_waiting_seconds_total: {source: node, type: counter, labels: [instance], meaning: "Node PSI: time some tasks waited for memory."}
+  node_pressure_io_waiting_seconds_total: {source: node, type: counter, labels: [instance], meaning: "Node PSI: time some tasks waited for I/O."}
+  # ---------------------------------------------------------------- scraper and rule evaluator
+  up: {source: vmagent, type: gauge, labels: [kafka_cluster, kafka_broker], meaning: "1 if the last scrape of the target succeeded (written by Prometheus / vmagent)."}
+  ALERTS: {source: rules, type: gauge, labels: [alertname, alertstate, severity, component], meaning: "Pending/firing alerts written by Prometheus / vmalert (dashboard annotations)."}
+  "kafka:consumer_group_topic_lag:deriv10m": {source: rules, type: gauge, labels: [kafka_cluster, group_id, topic_name], meaning: "Recording rule: lag growth per second (10-minute derivative)."}
+  "kafka:consumer_group_topic_consume_rate:rate5m": {source: rules, type: gauge, labels: [kafka_cluster, group_id, topic_name], meaning: "Recording rule: committed messages per second per group and topic."}
+  "kafka:consumer_group_topic_time_behind:seconds": {source: rules, type: gauge, labels: [kafka_cluster, group_id, topic_name], meaning: "Recording rule: lag divided by consume rate — seconds to drain the backlog."}
+  "kafka:request_handler_idle:ratio_rate5m": {source: rules, type: gauge, labels: [kafka_cluster, kafka_broker], meaning: "Recording rule: idle share of the request handler threads (5 m)."}
+  "kafka:jvm_heap_after_gc:ratio": {source: rules, type: gauge, labels: [kafka_cluster, kafka_broker, pod], meaning: "Recording rule: heap still used after GC relative to -Xmx."}
+  "kafka:jvm_gc_pause:ratio_rate5m": {source: rules, type: gauge, labels: [kafka_cluster, kafka_broker, pod], meaning: "Recording rule: share of time in stop-the-world GC (5 m)."}
+  "kafka:e2e_roundtrip_latency_seconds:p99_rate5m": {source: rules, type: gauge, labels: [kafka_cluster], meaning: "Recording rule: KMinion probe roundtrip p99 (5 m)."}
