@@ -22,7 +22,7 @@ type ClientTuning struct {
 	MaxPollRecords *int32  `avro:"maxPollRecords" json:"maxPollRecords"`
 }
 
-var schemaClientTuning = avro.MustParse(`{"name":"ClientTuning","type":"record","fields":[{"name":"acks","type":["null","string"]},{"name":"lingerMs","type":["null","int"]},{"name":"batchMaxBytes","type":["null","int"]},{"name":"compression","type":["null","string"]},{"name":"fetchMaxBytes","type":["null","int"]},{"name":"fetchMaxWaitMs","type":["null","int"]},{"name":"fetchMinBytes","type":["null","int"]},{"name":"maxPollRecords","type":["null","int"]}]}`)
+var schemaClientTuning = avro.MustParse(`{"name":"lab.platform.ClientTuning","type":"record","fields":[{"name":"acks","type":["null","string"]},{"name":"lingerMs","type":["null","int"]},{"name":"batchMaxBytes","type":["null","int"]},{"name":"compression","type":["null","string"]},{"name":"fetchMaxBytes","type":["null","int"]},{"name":"fetchMaxWaitMs","type":["null","int"]},{"name":"fetchMinBytes","type":["null","int"]},{"name":"maxPollRecords","type":["null","int"]}]}`)
 
 // Schema returns the schema for ClientTuning.
 func (o *ClientTuning) Schema() avro.Schema {
@@ -76,7 +76,7 @@ type Knobs struct {
 	Client            ClientTuning `avro:"client" json:"client"`
 }
 
-var schemaKnobs = avro.MustParse(`{"name":"Knobs","type":"record","fields":[{"name":"paused","type":"boolean"},{"name":"processingLatencyMs","type":"int"},{"name":"processingJitterMs","type":"int"},{"name":"processingErrorProbability","type":"double"},{"name":"businessFailureProbability","type":["null","double"]},{"name":"providerDown","type":"boolean"},{"name":"dbLatencyMs","type":"int"},{"name":"netLatencyMs","type":"int"},{"name":"netDropProbability","type":"double"},{"name":"warehouseOutage","type":"boolean"},{"name":"ordersPerSecond","type":["null","double"]},{"name":"popularSku","type":["null","string"]},{"name":"popularSkuProbability","type":"double"},{"name":"hotPartition","type":["null","int"]},{"name":"hotPartitionRatio","type":"double"},{"name":"paddingBytes","type":"int"},{"name":"duplicateProbability","type":"double"},{"name":"poisonProbability","type":"double"},{"name":"client","type":"ClientTuning"}]}`)
+var schemaKnobs = avro.MustParse(`{"name":"lab.platform.Knobs","type":"record","fields":[{"name":"paused","type":"boolean"},{"name":"processingLatencyMs","type":"int"},{"name":"processingJitterMs","type":"int"},{"name":"processingErrorProbability","type":"double"},{"name":"businessFailureProbability","type":["null","double"]},{"name":"providerDown","type":"boolean"},{"name":"dbLatencyMs","type":"int"},{"name":"netLatencyMs","type":"int"},{"name":"netDropProbability","type":"double"},{"name":"warehouseOutage","type":"boolean"},{"name":"ordersPerSecond","type":["null","double"]},{"name":"popularSku","type":["null","string"]},{"name":"popularSkuProbability","type":"double"},{"name":"hotPartition","type":["null","int"]},{"name":"hotPartitionRatio","type":"double"},{"name":"paddingBytes","type":"int"},{"name":"duplicateProbability","type":"double"},{"name":"poisonProbability","type":"double"},{"name":"client","type":{"name":"lab.platform.ClientTuning","type":"record","fields":[{"name":"acks","type":["null","string"]},{"name":"lingerMs","type":["null","int"]},{"name":"batchMaxBytes","type":["null","int"]},{"name":"compression","type":["null","string"]},{"name":"fetchMaxBytes","type":["null","int"]},{"name":"fetchMaxWaitMs","type":["null","int"]},{"name":"fetchMinBytes","type":["null","int"]},{"name":"maxPollRecords","type":["null","int"]}]}}]}`)
 
 // Schema returns the schema for Knobs.
 func (o *Knobs) Schema() avro.Schema {
@@ -107,7 +107,7 @@ type ControlSnapshot struct {
 	Knobs       Knobs    `avro:"knobs" json:"knobs"`
 }
 
-var schemaControlSnapshot = avro.MustParse(`{"name":"ControlSnapshot","type":"record","fields":[{"name":"service","type":"string"},{"name":"generation","type":"long"},{"name":"issuedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"expiresAt","type":["null",{"type":"long","logicalType":"timestamp-millis"}]},{"name":"experiments","type":{"type":"array","items":"string"}},{"name":"knobs","type":"Knobs"}]}`)
+var schemaControlSnapshot = avro.MustParse(`{"name":"lab.platform.ControlSnapshot","type":"record","fields":[{"name":"service","type":"string"},{"name":"generation","type":"long"},{"name":"issuedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"expiresAt","type":["null",{"type":"long","logicalType":"timestamp-millis"}]},{"name":"experiments","type":{"type":"array","items":"string"}},{"name":"knobs","type":{"name":"lab.platform.Knobs","type":"record","fields":[{"name":"paused","type":"boolean"},{"name":"processingLatencyMs","type":"int"},{"name":"processingJitterMs","type":"int"},{"name":"processingErrorProbability","type":"double"},{"name":"businessFailureProbability","type":["null","double"]},{"name":"providerDown","type":"boolean"},{"name":"dbLatencyMs","type":"int"},{"name":"netLatencyMs","type":"int"},{"name":"netDropProbability","type":"double"},{"name":"warehouseOutage","type":"boolean"},{"name":"ordersPerSecond","type":["null","double"]},{"name":"popularSku","type":["null","string"]},{"name":"popularSkuProbability","type":"double"},{"name":"hotPartition","type":["null","int"]},{"name":"hotPartitionRatio","type":"double"},{"name":"paddingBytes","type":"int"},{"name":"duplicateProbability","type":"double"},{"name":"poisonProbability","type":"double"},{"name":"client","type":{"name":"lab.platform.ClientTuning","type":"record","fields":[{"name":"acks","type":["null","string"]},{"name":"lingerMs","type":["null","int"]},{"name":"batchMaxBytes","type":["null","int"]},{"name":"compression","type":["null","string"]},{"name":"fetchMaxBytes","type":["null","int"]},{"name":"fetchMaxWaitMs","type":["null","int"]},{"name":"fetchMinBytes","type":["null","int"]},{"name":"maxPollRecords","type":["null","int"]}]}}]}}]}`)
 
 // Schema returns the schema for ControlSnapshot.
 func (o *ControlSnapshot) Schema() avro.Schema {
@@ -138,7 +138,7 @@ type AuditEvent struct {
 	Details  map[string]string `avro:"details" json:"details"`
 }
 
-var schemaAuditEvent = avro.MustParse(`{"name":"AuditEvent","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"at","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"actor","type":"string"},{"name":"action","type":"string"},{"name":"experimentId","type":["null","string"]},{"name":"scenario","type":["null","string"]},{"name":"details","type":{"type":"map","values":"string"}}]}`)
+var schemaAuditEvent = avro.MustParse(`{"name":"lab.platform.AuditEvent","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"at","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"actor","type":"string"},{"name":"action","type":"string"},{"name":"experimentId","type":["null","string"]},{"name":"scenario","type":["null","string"]},{"name":"details","type":{"type":"map","values":"string"}}]}`)
 
 // Schema returns the schema for AuditEvent.
 func (o *AuditEvent) Schema() avro.Schema {

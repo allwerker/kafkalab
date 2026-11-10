@@ -10,3 +10,4 @@ controlboard/backend/web/dist/
 .env
 .idea/
 .vscode/
+/.claude/worktrees/

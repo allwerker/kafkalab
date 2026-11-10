@@ -8,15 +8,6 @@ import (
 	"github.com/hamba/avro/v2"
 )
 
-type PaymentMethod string
-
-const (
-	PaymentMethodCard    PaymentMethod = "CARD"
-	PaymentMethodPaypal  PaymentMethod = "PAYPAL"
-	PaymentMethodInvoice PaymentMethod = "INVOICE"
-	PaymentMethodWallet  PaymentMethod = "WALLET"
-)
-
 type Region string
 
 const (
@@ -24,6 +15,15 @@ const (
 	RegionSouth Region = "SOUTH"
 	RegionEast  Region = "EAST"
 	RegionWest  Region = "WEST"
+)
+
+type PaymentMethod string
+
+const (
+	PaymentMethodCard    PaymentMethod = "CARD"
+	PaymentMethodPaypal  PaymentMethod = "PAYPAL"
+	PaymentMethodInvoice PaymentMethod = "INVOICE"
+	PaymentMethodWallet  PaymentMethod = "WALLET"
 )
 
 type PaymentFailureReason string
@@ -73,7 +73,7 @@ type EventMeta struct {
 	Producer string `avro:"producer" json:"producer"`
 }
 
-var schemaEventMeta = avro.MustParse(`{"name":"EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}`)
+var schemaEventMeta = avro.MustParse(`{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}`)
 
 // Schema returns the schema for EventMeta.
 func (o *EventMeta) Schema() avro.Schema {
@@ -97,7 +97,7 @@ type OrderLine struct {
 	UnitPriceCents int64  `avro:"unitPriceCents" json:"unitPriceCents"`
 }
 
-var schemaOrderLine = avro.MustParse(`{"name":"OrderLine","type":"record","fields":[{"name":"sku","type":"string"},{"name":"quantity","type":"int"},{"name":"unitPriceCents","type":"long"}]}`)
+var schemaOrderLine = avro.MustParse(`{"name":"lab.commerce.OrderLine","type":"record","fields":[{"name":"sku","type":"string"},{"name":"quantity","type":"int"},{"name":"unitPriceCents","type":"long"}]}`)
 
 // Schema returns the schema for OrderLine.
 func (o *OrderLine) Schema() avro.Schema {
@@ -127,7 +127,7 @@ type OrderCreated struct {
 	Padding []byte `avro:"padding" json:"padding"`
 }
 
-var schemaOrderCreated = avro.MustParse(`{"name":"OrderCreated","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"customerId","type":"string"},{"name":"region","type":"Region"},{"name":"paymentMethod","type":"PaymentMethod"},{"name":"lines","type":{"type":"array","items":"OrderLine"}},{"name":"totalCents","type":"long"},{"name":"currency","type":"string"},{"name":"padding","type":"bytes"}]}`)
+var schemaOrderCreated = avro.MustParse(`{"name":"lab.commerce.OrderCreated","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"customerId","type":"string"},{"name":"region","type":{"name":"lab.commerce.Region","type":"enum","symbols":["NORTH","SOUTH","EAST","WEST"]}},{"name":"paymentMethod","type":{"name":"lab.commerce.PaymentMethod","type":"enum","symbols":["CARD","PAYPAL","INVOICE","WALLET"]}},{"name":"lines","type":{"type":"array","items":{"name":"lab.commerce.OrderLine","type":"record","fields":[{"name":"sku","type":"string"},{"name":"quantity","type":"int"},{"name":"unitPriceCents","type":"long"}]}}},{"name":"totalCents","type":"long"},{"name":"currency","type":"string"},{"name":"padding","type":"bytes"}]}`)
 
 // Schema returns the schema for OrderCreated.
 func (o *OrderCreated) Schema() avro.Schema {
@@ -152,7 +152,7 @@ type PaymentCompleted struct {
 	PaymentMethod PaymentMethod `avro:"paymentMethod" json:"paymentMethod"`
 }
 
-var schemaPaymentCompleted = avro.MustParse(`{"name":"PaymentCompleted","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"paymentId","type":"string"},{"name":"amountCents","type":"long"},{"name":"paymentMethod","type":"PaymentMethod"}]}`)
+var schemaPaymentCompleted = avro.MustParse(`{"name":"lab.commerce.PaymentCompleted","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"paymentId","type":"string"},{"name":"amountCents","type":"long"},{"name":"paymentMethod","type":{"name":"lab.commerce.PaymentMethod","type":"enum","symbols":["CARD","PAYPAL","INVOICE","WALLET"]}}]}`)
 
 // Schema returns the schema for PaymentCompleted.
 func (o *PaymentCompleted) Schema() avro.Schema {
@@ -176,7 +176,7 @@ type PaymentFailed struct {
 	Reason      PaymentFailureReason `avro:"reason" json:"reason"`
 }
 
-var schemaPaymentFailed = avro.MustParse(`{"name":"PaymentFailed","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"amountCents","type":"long"},{"name":"reason","type":"PaymentFailureReason"}]}`)
+var schemaPaymentFailed = avro.MustParse(`{"name":"lab.commerce.PaymentFailed","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"amountCents","type":"long"},{"name":"reason","type":{"name":"lab.commerce.PaymentFailureReason","type":"enum","symbols":["DECLINED","PROVIDER_UNAVAILABLE","FRAUD_SUSPECTED"]}}]}`)
 
 // Schema returns the schema for PaymentFailed.
 func (o *PaymentFailed) Schema() avro.Schema {
@@ -200,7 +200,7 @@ type PaymentRefunded struct {
 	AmountCents int64     `avro:"amountCents" json:"amountCents"`
 }
 
-var schemaPaymentRefunded = avro.MustParse(`{"name":"PaymentRefunded","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"paymentId","type":"string"},{"name":"amountCents","type":"long"}]}`)
+var schemaPaymentRefunded = avro.MustParse(`{"name":"lab.commerce.PaymentRefunded","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"paymentId","type":"string"},{"name":"amountCents","type":"long"}]}`)
 
 // Schema returns the schema for PaymentRefunded.
 func (o *PaymentRefunded) Schema() avro.Schema {
@@ -223,7 +223,7 @@ type ReservedLine struct {
 	Quantity int32  `avro:"quantity" json:"quantity"`
 }
 
-var schemaReservedLine = avro.MustParse(`{"name":"ReservedLine","type":"record","fields":[{"name":"sku","type":"string"},{"name":"quantity","type":"int"}]}`)
+var schemaReservedLine = avro.MustParse(`{"name":"lab.commerce.ReservedLine","type":"record","fields":[{"name":"sku","type":"string"},{"name":"quantity","type":"int"}]}`)
 
 // Schema returns the schema for ReservedLine.
 func (o *ReservedLine) Schema() avro.Schema {
@@ -248,7 +248,7 @@ type InventoryReserved struct {
 	Lines         []ReservedLine `avro:"lines" json:"lines"`
 }
 
-var schemaInventoryReserved = avro.MustParse(`{"name":"InventoryReserved","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"reservationId","type":"string"},{"name":"warehouse","type":"string"},{"name":"lines","type":{"type":"array","items":"ReservedLine"}}]}`)
+var schemaInventoryReserved = avro.MustParse(`{"name":"lab.commerce.InventoryReserved","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"reservationId","type":"string"},{"name":"warehouse","type":"string"},{"name":"lines","type":{"type":"array","items":{"name":"lab.commerce.ReservedLine","type":"record","fields":[{"name":"sku","type":"string"},{"name":"quantity","type":"int"}]}}}]}`)
 
 // Schema returns the schema for InventoryReserved.
 func (o *InventoryReserved) Schema() avro.Schema {
@@ -273,7 +273,7 @@ type InventoryRejected struct {
 	Sku string `avro:"sku" json:"sku"`
 }
 
-var schemaInventoryRejected = avro.MustParse(`{"name":"InventoryRejected","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"reason","type":"InventoryRejectionReason"},{"name":"sku","type":"string"}]}`)
+var schemaInventoryRejected = avro.MustParse(`{"name":"lab.commerce.InventoryRejected","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"reason","type":{"name":"lab.commerce.InventoryRejectionReason","type":"enum","symbols":["OUT_OF_STOCK","UNKNOWN_SKU"]}},{"name":"sku","type":"string"}]}`)
 
 // Schema returns the schema for InventoryRejected.
 func (o *InventoryRejected) Schema() avro.Schema {
@@ -297,7 +297,7 @@ type InventoryReleased struct {
 	Lines         []ReservedLine `avro:"lines" json:"lines"`
 }
 
-var schemaInventoryReleased = avro.MustParse(`{"name":"InventoryReleased","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"reservationId","type":"string"},{"name":"lines","type":{"type":"array","items":"ReservedLine"}}]}`)
+var schemaInventoryReleased = avro.MustParse(`{"name":"lab.commerce.InventoryReleased","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"reservationId","type":"string"},{"name":"lines","type":{"type":"array","items":{"name":"lab.commerce.ReservedLine","type":"record","fields":[{"name":"sku","type":"string"},{"name":"quantity","type":"int"}]}}}]}`)
 
 // Schema returns the schema for InventoryReleased.
 func (o *InventoryReleased) Schema() avro.Schema {
@@ -323,7 +323,7 @@ type OrderShipped struct {
 	TrackingCode string    `avro:"trackingCode" json:"trackingCode"`
 }
 
-var schemaOrderShipped = avro.MustParse(`{"name":"OrderShipped","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"shipmentId","type":"string"},{"name":"warehouse","type":"string"},{"name":"carrier","type":"string"},{"name":"trackingCode","type":"string"}]}`)
+var schemaOrderShipped = avro.MustParse(`{"name":"lab.commerce.OrderShipped","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"shipmentId","type":"string"},{"name":"warehouse","type":"string"},{"name":"carrier","type":"string"},{"name":"trackingCode","type":"string"}]}`)
 
 // Schema returns the schema for OrderShipped.
 func (o *OrderShipped) Schema() avro.Schema {
@@ -350,7 +350,7 @@ type OrderCancelled struct {
 	ReleaseRequired bool `avro:"releaseRequired" json:"releaseRequired"`
 }
 
-var schemaOrderCancelled = avro.MustParse(`{"name":"OrderCancelled","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"reason","type":"CancellationReason"},{"name":"refundRequired","type":"boolean"},{"name":"releaseRequired","type":"boolean"}]}`)
+var schemaOrderCancelled = avro.MustParse(`{"name":"lab.commerce.OrderCancelled","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"reason","type":{"name":"lab.commerce.CancellationReason","type":"enum","symbols":["PAYMENT_FAILED","OUT_OF_STOCK","BOTH_FAILED","DEADLINE_EXCEEDED"]}},{"name":"refundRequired","type":"boolean"},{"name":"releaseRequired","type":"boolean"}]}`)
 
 // Schema returns the schema for OrderCancelled.
 func (o *OrderCancelled) Schema() avro.Schema {
@@ -375,7 +375,7 @@ type NotificationSent struct {
 	Template string `avro:"template" json:"template"`
 }
 
-var schemaNotificationSent = avro.MustParse(`{"name":"NotificationSent","type":"record","fields":[{"name":"meta","type":"EventMeta"},{"name":"channel","type":"NotificationChannel"},{"name":"template","type":"string"}]}`)
+var schemaNotificationSent = avro.MustParse(`{"name":"lab.commerce.NotificationSent","type":"record","fields":[{"name":"meta","type":{"name":"lab.commerce.EventMeta","type":"record","fields":[{"name":"eventId","type":"string"},{"name":"causationId","type":"string"},{"name":"orderId","type":"string"},{"name":"occurredAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"orderCreatedAt","type":{"type":"long","logicalType":"timestamp-millis"}},{"name":"producer","type":"string"}]}},{"name":"channel","type":{"name":"lab.commerce.NotificationChannel","type":"enum","symbols":["EMAIL","SMS","PUSH"]}},{"name":"template","type":"string"}]}`)
 
 // Schema returns the schema for NotificationSent.
 func (o *NotificationSent) Schema() avro.Schema {

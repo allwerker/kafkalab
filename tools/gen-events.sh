@@ -11,12 +11,15 @@ rm -rf "$ROOT/schemas/gen" && mkdir -p "$ROOT/schemas/gen"
 for idl in "$ROOT"/schemas/*.avdl; do
   name="$(basename "$idl" .avdl)"
   java -jar "$JAR" idl2schemata "$idl" "$ROOT/schemas/gen/" 2>/dev/null
-  # avrogen gets all named types of a protocol as one union so each type is defined exactly once.
-  java -jar "$JAR" idl "$idl" /dev/stdout 2>/dev/null | jq '.types' >"$ROOT/schemas/gen/_$name.union.json"
+  # Topic value types are the records documented with "topic: ..."; their .avsc files are
+  # self-contained, so every generated schema string parses on its own.
+  mapfile -t roots < <(java -jar "$JAR" idl "$idl" /dev/stdout 2>/dev/null \
+    | jq -r '.types[] | select((.doc // "") | startswith("topic:")) | .name')
+  files=(); for r in "${roots[@]}"; do files+=("$ROOT/schemas/gen/$r.avsc"); done
   out="$ROOT/pkg/events/${name}_gen.go"
   avrogen -pkg events -o "$out" -tags json:camel -encoders -enums -strict-types \
     -pkgdoc "Package events contains Go types generated from schemas/*.avdl. DO NOT EDIT." \
-    "$ROOT/schemas/gen/_$name.union.json"
+    "${files[@]}"
   # avrogen emits enum declarations once per reference; keep the first declaration of each.
   python3 - "$out" <<'PY'
 import re, sys
