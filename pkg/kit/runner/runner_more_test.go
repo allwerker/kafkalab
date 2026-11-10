@@ -2,6 +2,8 @@ package runner
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -66,7 +68,7 @@ func Test_shouldUseSafeDefaultsWhenOnlyTheEssentialsAreConfigured(t *testing.T) 
 
 	// THEN: the group is the service name and retries back off up to five seconds
 	if cfg.Group != "inventory" || cfg.Backoff(1) != 250*time.Millisecond || cfg.Backoff(100) != 5*time.Second ||
-		cfg.DedupWindow != time.Hour || cfg.JanitorEvery != time.Minute || cfg.Metrics == nil || cfg.Sleep == nil {
+		cfg.DedupWindow != time.Hour || cfg.JanitorEvery != time.Minute || cfg.PartitionConcurrency != 4 || cfg.Metrics == nil || cfg.Sleep == nil {
 		t.Fatalf("unexpected defaults %+v", cfg)
 	}
 }
@@ -219,5 +221,68 @@ func Test_shouldCommitWithoutPublishingWhenTheHandlerHasNothingToPublish(t *test
 	})
 	if calls.Load() != 1 || h.hasMetric("lab_records_produced_total") {
 		t.Fatalf("calls=%d\n%s", calls.Load(), h.metrics())
+	}
+}
+
+func Test_shouldCountEachOrderOnceWhenTheBatchIsRetriedAfterAFailure(t *testing.T) {
+	// GIVEN: an analytics-style handler that counts in memory and fails on its first attempt
+	h := newHarness(t)
+	var attempts, counted atomic.Int64
+	h.start(h.runner(HandlerFunc(func(ctx context.Context, _ pgx.Tx, _ Input) ([]Output, error) {
+		OnCommit(ctx, func() { counted.Add(1) })
+		if attempts.Add(1) == 1 {
+			return nil, errors.New("connection refused")
+		}
+		return nil, nil
+	})))
+
+	// WHEN: one order arrives and its batch is retried
+	h.produce(order("o-count", 1))
+	h.eventually("processed", func() bool {
+		return h.hasMetric(`lab_records_processed_total{topic="orders.created",result="ok"} 1`)
+	})
+
+	// THEN: the counter moved exactly once although the handler ran twice
+	if attempts.Load() != 2 || counted.Load() != 1 {
+		t.Fatalf("attempts=%d counted=%d", attempts.Load(), counted.Load())
+	}
+}
+
+func Test_shouldRunTheSideEffectImmediatelyWhenNoBatchIsActive(t *testing.T) {
+	// GIVEN: a handler unit test calling the handler directly
+	ran := false
+
+	// WHEN: it registers a post-commit side effect
+	OnCommit(context.Background(), func() { ran = true })
+
+	// THEN: the side effect runs right away
+	if !ran {
+		t.Fatal("expected immediate execution")
+	}
+}
+
+func Test_shouldProcessSeveralPartitionsAtOnceWhenOrdersArriveOnAllPartitions(t *testing.T) {
+	// GIVEN: a handler that takes 300 ms per order and a service allowed to work on 3 partitions at once
+	h := newHarness(t)
+	var calls, inFlight, peak atomic.Int64
+	h.start(h.runner(HandlerFunc(func(ctx context.Context, _ pgx.Tx, _ Input) ([]Output, error) {
+		calls.Add(1)
+		n := inFlight.Add(1)
+		for p := peak.Load(); n > p && !peak.CompareAndSwap(p, n); p = peak.Load() {
+		}
+		time.Sleep(300 * time.Millisecond)
+		inFlight.Add(-1)
+		return nil, nil
+	}), func(c *Config) { c.PartitionConcurrency = 3 }))
+
+	// WHEN: orders land on every partition of orders.created
+	for i := 0; i < 12; i++ {
+		h.produce(order(fmt.Sprintf("o-par-%d", i), 1))
+	}
+	h.eventually("all processed", func() bool { return calls.Load() == 12 })
+
+	// THEN: partitions were processed in parallel, but never more than allowed
+	if peak.Load() < 2 || peak.Load() > 3 {
+		t.Fatalf("peak concurrency %d", peak.Load())
 	}
 }

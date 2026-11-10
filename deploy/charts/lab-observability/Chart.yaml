@@ -1,0 +1,5 @@
+apiVersion: v2
+name: lab-observability
+description: Grafana datasources for logs/traces and the KMinion scrape
+type: application
+version: 0.1.0

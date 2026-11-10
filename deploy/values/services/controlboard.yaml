@@ -1,0 +1,14 @@
+# Controlboard (T207/T210). Release: deploy/helmfile.d/70-controlboard.yaml.gotmpl.
+tier: control
+memory: 128Mi
+cpu: 100m
+database: true          # alert history in schema/role "controlboard"
+serviceAccount: controlboard
+ingress:
+  host: board.localhost
+env:
+  VM_URL: http://vmsingle-vmks.monitoring:8428
+  VMALERT_URL: http://vmalert-vmks.monitoring:8080
+  ALERTMANAGER_URL: http://vmalertmanager-vmks.monitoring:9093
+  GRAFANA_URL: http://grafana.localhost:8080
+  BOARD_URL: http://board.localhost:8080

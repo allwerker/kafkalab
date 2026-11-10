@@ -1,0 +1,33 @@
+# Controlboard (namespace control): ServiceAccount/RBAC, then the board itself from the generic
+# lab-service chart. Image tag from .tools/image-tags.yaml (written by `make images`).
+{{- $tags := dict }}
+{{- $tagFile := "../../.tools/image-tags.yaml" }}
+{{- if isFile $tagFile }}{{ $tags = (readFile $tagFile | fromYaml).images | default dict }}{{ end }}
+{{- /* chaos-net helper image (make chaos-images); empty disables the broker network scenarios */}}
+{{- $chaosNet := "" }}
+{{- if isFile "../../.tools/chaos-net-tag" }}{{ $chaosNet = readFile "../../.tools/chaos-net-tag" | trim }}{{ end }}
+releases:
+  - name: controlboard-rbac
+    namespace: control
+    createNamespace: true
+    chart: ../charts/controlboard-rbac
+    labels:
+      name: controlboard
+{{- if hasKey $tags "controlboard" }}
+  - name: controlboard
+    namespace: control
+    createNamespace: true
+    chart: ../charts/lab-service
+    needs: [control/controlboard-rbac]
+    values:
+      - name: controlboard
+        tracing: {{ .Values.extras.traces }}
+        replicas: 1
+        image:
+          registry: {{ .Values.registry }}
+          tag: {{ index $tags "controlboard" | quote }}
+        env:
+          BROKER_COUNT: {{ .Values.kafka.replicas | quote }}
+          CHAOS_NET_IMAGE: {{ $chaosNet | quote }}
+      - ../values/services/controlboard.yaml
+{{- end }}

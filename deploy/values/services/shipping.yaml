@@ -1,0 +1,5 @@
+memory: 64Mi
+env:
+  SWEEP_EVERY: "5s"
+  JOIN_DEADLINE: "300s"
+  RETAIN_TERMINAL: "2h"

@@ -1,0 +1,3 @@
+memory: 64Mi
+env:
+  SEND_LATENCY: "2ms"

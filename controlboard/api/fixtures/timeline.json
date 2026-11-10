@@ -1,0 +1,198 @@
+[
+  {
+    "id": "tl-00024",
+    "at": "2026-01-15T10:01:56.000Z",
+    "kind": "alert",
+    "severity": "success",
+    "title": "Resolved: KafkaUnderReplicatedPartitions",
+    "detail": "50 partitions are under-replicated"
+  },
+  {
+    "id": "tl-00023",
+    "at": "2026-01-15T10:01:48.000Z",
+    "kind": "alert",
+    "severity": "success",
+    "title": "Resolved: ChaosExperimentActive",
+    "detail": "1 chaos experiment(s) running"
+  },
+  {
+    "id": "tl-00022",
+    "at": "2026-01-15T10:01:48.000Z",
+    "kind": "alert",
+    "severity": "success",
+    "title": "Resolved: KafkaBrokerDown",
+    "detail": "Kafka broker 1 is down"
+  },
+  {
+    "id": "tl-00021",
+    "at": "2026-01-15T10:01:47.250Z",
+    "kind": "recovery",
+    "severity": "success",
+    "title": "Broker 1 is back",
+    "detail": "replicas catching up, preferred leaders return shortly"
+  },
+  {
+    "id": "tl-00020",
+    "at": "2026-01-15T10:01:47.000Z",
+    "kind": "recovery",
+    "severity": "info",
+    "title": "Broker Crash ended — reverting",
+    "detail": "waiting for KPIs to return to baseline",
+    "experimentId": "exp-0002"
+  },
+  {
+    "id": "tl-00019",
+    "at": "2026-01-15T10:01:33.000Z",
+    "kind": "alert",
+    "severity": "warning",
+    "title": "Firing: KafkaUnderReplicatedPartitions",
+    "detail": "50 partitions are under-replicated"
+  },
+  {
+    "id": "tl-00018",
+    "at": "2026-01-15T10:01:28.000Z",
+    "kind": "alert",
+    "severity": "critical",
+    "title": "Firing: KafkaBrokerDown",
+    "detail": "Kafka broker 1 is down"
+  },
+  {
+    "id": "tl-00017",
+    "at": "2026-01-15T10:01:23.000Z",
+    "kind": "alert",
+    "severity": "info",
+    "title": "Firing: ChaosExperimentActive",
+    "detail": "1 chaos experiment(s) running"
+  },
+  {
+    "id": "tl-00016",
+    "at": "2026-01-15T10:01:22.250Z",
+    "kind": "experiment",
+    "severity": "critical",
+    "title": "Broker 1 crashed",
+    "detail": "no controlled shutdown — clients wait for timeouts"
+  },
+  {
+    "id": "tl-00015",
+    "at": "2026-01-15T10:01:22.000Z",
+    "kind": "experiment",
+    "severity": "critical",
+    "title": "Broker Crash started",
+    "detail": "25s, auto-recover",
+    "experimentId": "exp-0002"
+  },
+  {
+    "id": "tl-00014",
+    "at": "2026-01-15T10:01:09.000Z",
+    "kind": "alert",
+    "severity": "success",
+    "title": "Resolved: LabTestAlert",
+    "detail": "Test alert from the controlboard"
+  },
+  {
+    "id": "tl-00013",
+    "at": "2026-01-15T10:01:08.000Z",
+    "kind": "alert",
+    "severity": "success",
+    "title": "Resolved: ChaosExperimentActive",
+    "detail": "1 chaos experiment(s) running"
+  },
+  {
+    "id": "tl-00012",
+    "at": "2026-01-15T10:01:07.000Z",
+    "kind": "recovery",
+    "severity": "info",
+    "title": "Black Friday ended — reverting",
+    "detail": "waiting for KPIs to return to baseline",
+    "experimentId": "exp-0001"
+  },
+  {
+    "id": "tl-00011",
+    "at": "2026-01-15T10:00:49.000Z",
+    "kind": "alert",
+    "severity": "warning",
+    "title": "Firing: EndToEndLatencyHigh",
+    "detail": "Order e2e p95 is 143.1 s"
+  },
+  {
+    "id": "tl-00010",
+    "at": "2026-01-15T10:00:47.000Z",
+    "kind": "alert",
+    "severity": "warning",
+    "title": "Firing: KafkaConsumerLagHigh",
+    "detail": "Consumer group analytics lags 9,423 records"
+  },
+  {
+    "id": "tl-00009",
+    "at": "2026-01-15T10:00:46.000Z",
+    "kind": "alert",
+    "severity": "warning",
+    "title": "Firing: KafkaConsumerLagHigh",
+    "detail": "Consumer group notification lags 10,161 records"
+  },
+  {
+    "id": "tl-00008",
+    "at": "2026-01-15T10:00:46.000Z",
+    "kind": "alert",
+    "severity": "warning",
+    "title": "Firing: KafkaConsumerLagHigh",
+    "detail": "Consumer group inventory lags 11,690 records"
+  },
+  {
+    "id": "tl-00007",
+    "at": "2026-01-15T10:00:46.000Z",
+    "kind": "alert",
+    "severity": "warning",
+    "title": "Firing: KafkaConsumerLagHigh",
+    "detail": "Consumer group payment lags 11,859 records"
+  },
+  {
+    "id": "tl-00006",
+    "at": "2026-01-15T10:00:33.000Z",
+    "kind": "alert",
+    "severity": "info",
+    "title": "Firing: ChaosExperimentActive",
+    "detail": "1 chaos experiment(s) running"
+  },
+  {
+    "id": "tl-00005",
+    "at": "2026-01-15T10:00:32.000Z",
+    "kind": "experiment",
+    "severity": "warning",
+    "title": "Black Friday started",
+    "detail": "35s, auto-recover",
+    "experimentId": "exp-0001"
+  },
+  {
+    "id": "tl-00004",
+    "at": "2026-01-15T10:00:27.000Z",
+    "kind": "alert",
+    "severity": "info",
+    "title": "Firing: LabTestAlert",
+    "detail": "Test alert from the controlboard"
+  },
+  {
+    "id": "tl-00003",
+    "at": "2026-01-15T10:00:26.000Z",
+    "kind": "config",
+    "severity": "warning",
+    "title": "Chaos armed",
+    "detail": "Destructive scenarios can now be started"
+  },
+  {
+    "id": "tl-00002",
+    "at": "2026-01-15T10:00:24.000Z",
+    "kind": "alert",
+    "severity": "info",
+    "title": "Test alert requested",
+    "detail": "LabTestAlert → vmalert → Alertmanager → webhook"
+  },
+  {
+    "id": "tl-00001",
+    "at": "2026-01-15T10:00:00.000Z",
+    "kind": "simulation",
+    "severity": "info",
+    "title": "Simulation started",
+    "detail": "Baseline: 50 orders/s, 6 services, 3 brokers"
+  }
+]

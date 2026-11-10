@@ -106,6 +106,9 @@ type Config struct {
 	DedupWindow time.Duration
 	// JanitorEvery is how often old processed event ids are purged (default 1 min).
 	JanitorEvery time.Duration
+	// PartitionConcurrency is how many partitions of one poll are processed in parallel
+	// (default 4; keep it below the database pool size).
+	PartitionConcurrency int
 
 	Backoff func(attempt int) time.Duration
 	Random  func() float64
@@ -147,6 +150,9 @@ func New(cfg Config) *Runner {
 	}
 	if cfg.JanitorEvery == 0 {
 		cfg.JanitorEvery = time.Minute
+	}
+	if cfg.PartitionConcurrency <= 0 {
+		cfg.PartitionConcurrency = 4
 	}
 	if cfg.Backoff == nil {
 		cfg.Backoff = func(attempt int) time.Duration {
@@ -327,12 +333,28 @@ func (r *Runner) consume(ctx context.Context, cl *kgo.Client, tuning events.Clie
 				r.cfg.Log.WarnContext(ctx, "fetch error", "topic", topic, "partition", p, "error", err)
 			}
 		})
-		fs.EachPartition(func(p kgo.FetchTopicPartition) {
-			if len(p.Records) > 0 {
-				r.processPartition(ctx, cl, p.Topic, p.Partition, p.Records)
-			}
-		})
+		r.processFetches(ctx, cl, fs)
 	}
+}
+
+// processFetches processes the partitions of one poll concurrently (bounded by
+// PartitionConcurrency). Each partition keeps its own order and its own transaction, so
+// per-key ordering is preserved while one pod uses several database connections at once.
+func (r *Runner) processFetches(ctx context.Context, cl *kgo.Client, fs kgo.Fetches) {
+	sem := make(chan struct{}, r.cfg.PartitionConcurrency)
+	var wg sync.WaitGroup
+	fs.EachPartition(func(p kgo.FetchTopicPartition) {
+		if len(p.Records) == 0 {
+			return
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func() {
+			defer func() { <-sem; wg.Done() }()
+			r.processPartition(ctx, cl, p.Topic, p.Partition, p.Records)
+		}()
+	})
+	wg.Wait()
 }
 
 type outRecord struct {
@@ -356,7 +378,8 @@ func (r *Runner) processPartition(ctx context.Context, cl *kgo.Client, topic str
 			r.cfg.Log.InfoContext(ctx, "partition moved to another pod, dropping batch", "topic", topic, "partition", partition)
 			return
 		}
-		outs, stats, err := r.processBatch(ctx, topic, recs)
+		hooks := &commitHooks{}
+		outs, stats, err := r.processBatch(context.WithValue(ctx, commitKey{}, hooks), topic, recs)
 		reason := "db"
 		if err == nil {
 			reason = "produce"
@@ -367,6 +390,7 @@ func (r *Runner) processPartition(ctx context.Context, cl *kgo.Client, topic str
 			reason = "registry"
 		}
 		if err == nil {
+			hooks.run()
 			cl.MarkCommitRecords(recs[len(recs)-1])
 			r.record(topic, stats, start)
 			return

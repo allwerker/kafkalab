@@ -1,0 +1,33 @@
+{
+  "id": "exp-0002",
+  "scenario": "broker-crash",
+  "name": "Broker Crash",
+  "status": "recovering",
+  "params": {
+    "broker": 1
+  },
+  "createdAt": "2026-01-15T10:01:22.000Z",
+  "startsAt": "2026-01-15T10:01:22.000Z",
+  "endsAt": "2026-01-15T10:01:47.000Z",
+  "autoRecover": true,
+  "affected": [
+    "broker-1"
+  ],
+  "observations": [
+    {
+      "label": "Broker 1 stopped",
+      "requested": "broker down",
+      "observed": "broker still up",
+      "confirmed": true,
+      "at": "2026-01-15T10:01:23.000Z"
+    },
+    {
+      "label": "Under-replicated partitions",
+      "requested": "> 0",
+      "observed": "0",
+      "confirmed": true,
+      "at": "2026-01-15T10:01:23.000Z"
+    }
+  ],
+  "endedAt": "2026-01-15T10:01:47.000Z"
+}

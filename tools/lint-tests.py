@@ -48,7 +48,7 @@ def main(dirs: list[str]) -> int:
     count = 0
     for d in dirs:
         for path in sorted(pathlib.Path(d).rglob("*_test.go")):
-            if SKIP_DIRS.intersection(path.parts):
+            if SKIP_DIRS.intersection(path.relative_to(d).parts):
                 continue
             count += 1
             problems += check_file(path)

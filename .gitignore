@@ -5,7 +5,8 @@ coverage*.out
 coverage*.html
 node_modules/
 controlboard/web/dist/
-controlboard/backend/web/dist/
+controlboard/backend/web/dist/*
+!controlboard/backend/web/dist/index.html
 *.test
 .env
 .idea/

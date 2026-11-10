@@ -1,0 +1,33 @@
+{
+  "id": "exp-0004",
+  "scenario": "hot-partition",
+  "name": "Hot Partition",
+  "status": "aborted",
+  "params": {
+    "partition": 0,
+    "ratio": 0.6
+  },
+  "createdAt": "2026-01-15T10:02:30.000Z",
+  "startsAt": "2026-01-15T10:02:30.000Z",
+  "endsAt": "2026-01-15T10:03:30.000Z",
+  "autoRecover": true,
+  "affected": [
+    "order-generator"
+  ],
+  "observations": [
+    {
+      "label": "Partition 0 is hot",
+      "requested": "60.0% of traffic",
+      "observed": "lag p0 52 vs avg 406",
+      "confirmed": false,
+      "at": "2026-01-15T10:02:30.000Z"
+    }
+  ],
+  "endedAt": "2026-01-15T10:02:30.000Z",
+  "report": {
+    "peakLag": 0,
+    "ordersAffected": 0,
+    "revenueImpactEur": 0,
+    "alerts": []
+  }
+}

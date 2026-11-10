@@ -1,0 +1,4 @@
+dist/
+coverage/
+smoke/*.png
+!smoke/screenshot.png
