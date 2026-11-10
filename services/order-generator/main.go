@@ -28,8 +28,18 @@ func main() {
 		}
 		defer p.Close(context.WithoutCancel(ctx))
 		a.AddReadiness(func() bool { return true })
-		loop := &gen.Loop{Producer: p, Encoder: codec, Control: ctl, Gen: domain.NewGenerator(uint64(time.Now().UnixNano())),
-			BaseRate: a.Env.Float("ORDERS_PER_SECOND", 50), Metrics: a.Metrics, Now: time.Now}
+		loop := &gen.Loop{
+			Producer: p, Encoder: codec, Control: ctl, Gen: domain.NewGenerator(uint64(time.Now().UnixNano())),
+			BaseRate:     a.Env.Float("ORDERS_PER_SECOND", 50),
+			Wave:         a.Env.Bool("TRAFFIC_WAVE", true),
+			LagThreshold: int64(a.Env.Int("LAG_THRESHOLD_RECORDS", gen.DefaultLagThreshold)),
+			Partitions:   a.Env.Int("ORDERS_CREATED_PARTITIONS", gen.DefaultPartitions),
+			Buffered:     func() int64 { return p.Client().BufferedProduceRecords() },
+			Metrics:      a.Metrics, Now: time.Now,
+		}
+		if err := a.Env.Err(); err != nil {
+			return err
+		}
 		return loop.Run(ctx)
 	})
 }

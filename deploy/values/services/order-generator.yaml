@@ -3,3 +3,4 @@ memory: 96Mi
 cpu: 100m
 env:
   ORDERS_PER_SECOND: "50"
+  TRAFFIC_WAVE: "true"
