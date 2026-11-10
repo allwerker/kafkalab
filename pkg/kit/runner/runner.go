@@ -370,16 +370,35 @@ type batchStats struct {
 	dlqReasons         map[string]int
 }
 
+var _ = batchStats{}
+
+// errRejected is returned from a batch attempt when the handler rejected a record permanently.
+// The batch is rolled back (undoing the handler's partial writes) and retried at once with that
+// record routed straight to the DLQ — cheaper than a savepoint around every record.
+type errRejected struct {
+	id  string
+	err error
+}
+
+func (e errRejected) Error() string { return "rejected " + e.id + ": " + e.err.Error() }
+
 func (r *Runner) processPartition(ctx context.Context, cl *kgo.Client, topic string, partition int32, recs []*kgo.Record) {
 	start := r.cfg.Now()
 	r.m.set.GetOrCreateCounter(kafka.Label("lab_records_consumed_total", "topic", topic)).Add(len(recs))
+	rejected := map[string]error{}
 	for attempt := 1; ctx.Err() == nil; attempt++ {
 		if !r.owns(topic, partition) {
 			r.cfg.Log.InfoContext(ctx, "partition moved to another pod, dropping batch", "topic", topic, "partition", partition)
 			return
 		}
 		hooks := &commitHooks{}
-		outs, stats, err := r.processBatch(context.WithValue(ctx, commitKey{}, hooks), topic, recs)
+		outs, stats, err := r.processBatch(context.WithValue(ctx, commitKey{}, hooks), topic, recs, rejected)
+		var rej errRejected
+		if errors.As(err, &rej) {
+			rejected[rej.id] = rej.err
+			attempt--
+			continue
+		}
 		reason := "db"
 		if err == nil {
 			reason = "produce"
@@ -417,130 +436,216 @@ func (r *Runner) record(topic string, s batchStats, start time.Time) {
 	set.GetOrCreateHistogram(kafka.Label("lab_batch_duration_seconds", "topic", topic)).Update(r.cfg.Now().Sub(start).Seconds())
 }
 
-func (r *Runner) processBatch(ctx context.Context, topic string, recs []*kgo.Record) ([]outRecord, batchStats, error) {
-	var outs []outRecord
-	stats := batchStats{dlqReasons: map[string]int{}}
-	err := r.cfg.DB.InTx(ctx, func(tx pgx.Tx) error {
-		outs, stats = nil, batchStats{dlqReasons: map[string]int{}}
-		for _, rec := range recs {
-			o, result, err := r.processRecord(ctx, tx, topic, rec)
-			if err != nil {
-				return err
-			}
-			switch result {
-			case "duplicate":
-				stats.duplicate++
-			case "ok":
-				stats.ok++
-			default:
-				stats.dlq++
-				stats.dlqReasons[result]++
-			}
-			outs = append(outs, o...)
-		}
-		return nil
-	})
-	return outs, stats, err
+// item is one record of a batch after decoding.
+type item struct {
+	rec    *kgo.Record
+	id     string // event id, or dlq:<topic>:<partition>:<offset> for undecodable records
+	value  any
+	meta   events.EventMeta
+	reason string // non-empty: dead-letter with this reason
+	cause  error
+	dupOf  int // index of an earlier record of this batch with the same id, or -1
+	result string
+	outs   []outRecord
 }
 
 var errEncode = errors.New("encode output")
 
-// processRecord returns the outputs and the result: "ok", "duplicate" or a DLQ reason.
-func (r *Runner) processRecord(ctx context.Context, tx pgx.Tx, topic string, rec *kgo.Record) ([]outRecord, string, error) {
-	v, err := r.cfg.Codec.Decode(rec.Value)
-	meta, isEvent := serde.Meta(v)
-	reason := "undecodable"
-	if err == nil && !isEvent {
-		err = fmt.Errorf("%T is not a business event", v)
-	} else if err == nil && !expectedType(topic, v) {
-		reason, err = "unexpected-type", fmt.Errorf("%T does not belong on %s", v, topic)
-	}
-	if err != nil {
-		id := fmt.Sprintf("dlq:%s:%d:%d", topic, rec.Partition, rec.Offset)
-		return r.once(ctx, tx, id, topic, reason, func() ([]outRecord, string, error) {
-			return []outRecord{r.dlqRecord(rec, reason, err)}, reason, nil
-		})
-	}
-	return r.once(ctx, tx, meta.EventID, topic, "ok", func() ([]outRecord, string, error) {
-		pctx := ctx
-		if r.cfg.Tracer != nil {
-			var span trace.Span
-			pctx, span = r.cfg.Tracer.WithProcessSpan(rec)
-			defer span.End()
-		}
-		knobs := r.cfg.Control.Knobs()
-		if d := time.Duration(knobs.ProcessingLatencyMs) * time.Millisecond; d > 0 || knobs.ProcessingJitterMs > 0 {
-			d += time.Duration(r.cfg.Random()*float64(knobs.ProcessingJitterMs)) * time.Millisecond
-			if err := r.cfg.Sleep(ctx, d); err != nil {
-				return nil, "", err
-			}
-		}
-		if p := knobs.ProcessingErrorProbability; p > 0 && r.cfg.Random() < p {
-			return nil, "", ErrInjected
-		}
-		r.m.set.GetOrCreateHistogram(kafka.Label("lab_event_age_seconds", "topic", topic)).
-			Update(max(r.cfg.Now().Sub(meta.OccurredAt).Seconds(), 0))
-		start := r.cfg.Now()
-		sp, err := tx.Begin(ctx)
+// processBatch handles one partition batch in one transaction with a constant number of
+// bookkeeping statements per batch: one multi-row insert claims all event ids, one query loads
+// the stored outputs of duplicates, one update stores the new outputs.
+func (r *Runner) processBatch(ctx context.Context, topic string, recs []*kgo.Record, rejected map[string]error) ([]outRecord, batchStats, error) {
+	items := r.decode(topic, recs)
+	var outs []outRecord
+	var stats batchStats
+	err := r.cfg.DB.InTx(ctx, func(tx pgx.Tx) error {
+		outs, stats = nil, batchStats{dlqReasons: map[string]int{}}
+		fresh, err := r.claim(ctx, tx, topic, items)
 		if err != nil { // coverage-ignore: connection loss mid-transaction; the batch is retried
-			return nil, "", err
+			return err
 		}
-		outs, err := r.cfg.Handler.Handle(pctx, sp, Input{
-			Topic: topic, Partition: rec.Partition, Offset: rec.Offset, Key: string(rec.Key), Value: v, Meta: meta,
-		})
-		r.m.set.GetOrCreateHistogram(kafka.Label("lab_processing_duration_seconds", "topic", topic)).Update(r.cfg.Now().Sub(start).Seconds())
-		if IsPermanent(err) {
-			_ = sp.Rollback(ctx)
-			return []outRecord{r.dlqRecord(rec, "rejected", err)}, "rejected", nil
+		if err := r.loadDuplicates(ctx, tx, items, fresh); err != nil { // coverage-ignore: connection loss mid-transaction
+			return err
 		}
-		if err != nil {
-			return nil, "", err
-		}
-		if err := sp.Commit(ctx); err != nil { // coverage-ignore: connection loss mid-transaction; the batch is retried
-			return nil, "", err
-		}
-		encoded := make([]outRecord, 0, len(outs))
-		for _, o := range outs {
-			b, err := r.cfg.Codec.Encode(o.Value)
-			if err != nil {
-				return nil, "", fmt.Errorf("%w %s: %v", errEncode, o.Topic, err)
+		ids, raws := make([]string, 0, len(items)), make([]string, 0, len(items))
+		for i := range items {
+			it := &items[i]
+			switch {
+			case it.dupOf >= 0:
+				it.result, it.outs = "duplicate", rebind(items[it.dupOf].outs, ctx)
+			case !fresh[it.id]:
+				it.result = "duplicate"
+			case it.reason != "":
+				it.result, it.outs = it.reason, []outRecord{r.dlqRecord(it.rec, it.reason, it.cause)}
+			case rejected[it.id] != nil:
+				it.result, it.outs = "rejected", []outRecord{r.dlqRecord(it.rec, "rejected", rejected[it.id])}
+			default:
+				o, err := r.handle(ctx, tx, topic, it)
+				if err != nil {
+					return err
+				}
+				it.result, it.outs = "ok", o
 			}
-			encoded = append(encoded, outRecord{Topic: o.Topic, Key: o.Key, Value: b, ctx: pctx})
+			if it.dupOf < 0 && fresh[it.id] {
+				raw, _ := json.Marshal(it.outs)
+				ids, raws = append(ids, it.id), append(raws, string(raw))
+			}
+			switch it.result {
+			case "ok":
+				stats.ok++
+			case "duplicate":
+				stats.duplicate++
+			default:
+				stats.dlq++
+				stats.dlqReasons[it.result]++
+			}
+			outs = append(outs, it.outs...)
 		}
-		return encoded, "ok", nil
+		_, err = tx.Exec(ctx, `UPDATE processed_events p SET outputs = v.o::jsonb
+			FROM unnest($1::text[], $2::text[]) AS v(id, o) WHERE p.event_id = v.id`, ids, raws)
+		return err
 	})
+	return outs, stats, err
 }
 
-// once runs fn only the first time id is seen. A repeated id returns the stored outputs, so a
-// redelivered input re-publishes exactly what the first delivery produced.
-func (r *Runner) once(ctx context.Context, tx pgx.Tx, id, topic, firstResult string, fn func() ([]outRecord, string, error)) ([]outRecord, string, error) {
-	tag, err := tx.Exec(ctx, `INSERT INTO processed_events(event_id, topic) VALUES ($1, $2) ON CONFLICT DO NOTHING`, id, topic)
+func (r *Runner) decode(topic string, recs []*kgo.Record) []item {
+	items := make([]item, len(recs))
+	first := map[string]int{}
+	for i, rec := range recs {
+		it := item{rec: rec, dupOf: -1}
+		v, err := r.cfg.Codec.Decode(rec.Value)
+		meta, isEvent := serde.Meta(v)
+		it.reason = "undecodable"
+		if err == nil && !isEvent {
+			err = fmt.Errorf("%T is not a business event", v)
+		} else if err == nil && !expectedType(topic, v) {
+			it.reason, err = "unexpected-type", fmt.Errorf("%T does not belong on %s", v, topic)
+		}
+		if err != nil {
+			it.id, it.cause = fmt.Sprintf("dlq:%s:%d:%d", topic, rec.Partition, rec.Offset), err
+		} else {
+			it.id, it.value, it.meta, it.reason = meta.EventID, v, meta, ""
+		}
+		if j, seen := first[it.id]; seen {
+			it.dupOf = j
+		} else {
+			first[it.id] = i
+		}
+		items[i] = it
+	}
+	return items
+}
+
+// claim inserts all event ids of the batch and returns the ones that were new.
+func (r *Runner) claim(ctx context.Context, tx pgx.Tx, topic string, items []item) (map[string]bool, error) {
+	ids := make([]string, 0, len(items))
+	for _, it := range items {
+		if it.dupOf < 0 {
+			ids = append(ids, it.id)
+		}
+	}
+	rows, err := tx.Query(ctx, `INSERT INTO processed_events(event_id, topic) SELECT unnest($1::text[]), $2
+		ON CONFLICT DO NOTHING RETURNING event_id`, ids, topic)
 	if err != nil { // coverage-ignore: connection loss mid-transaction; the batch is retried
-		return nil, "", err
+		return nil, err
 	}
-	if tag.RowsAffected() == 0 {
+	fresh := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil { // coverage-ignore: text column always scans into a string
+			return nil, err
+		}
+		fresh[id] = true
+	}
+	return fresh, rows.Err()
+}
+
+// loadDuplicates fills the outputs of records processed by an earlier delivery, so a
+// redelivered input re-publishes exactly what the first delivery produced.
+func (r *Runner) loadDuplicates(ctx context.Context, tx pgx.Tx, items []item, fresh map[string]bool) error {
+	var dups []string
+	for _, it := range items {
+		if it.dupOf < 0 && !fresh[it.id] {
+			dups = append(dups, it.id)
+		}
+	}
+	if len(dups) == 0 {
+		return nil
+	}
+	rows, err := tx.Query(ctx, `SELECT event_id, outputs FROM processed_events WHERE event_id = ANY($1)`, dups)
+	if err != nil { // coverage-ignore: connection loss mid-transaction; the batch is retried
+		return err
+	}
+	stored := map[string][]outRecord{}
+	for rows.Next() {
+		var id string
 		var raw []byte
-		if err := tx.QueryRow(ctx, `SELECT outputs FROM processed_events WHERE event_id = $1`, id).Scan(&raw); err != nil { // coverage-ignore: connection loss mid-transaction
-			return nil, "", err
+		if err := rows.Scan(&id, &raw); err != nil { // coverage-ignore: columns always scan
+			return err
 		}
-		var stored []outRecord
-		if err := json.Unmarshal(raw, &stored); err != nil { // coverage-ignore: the column is only written by this function
-			return nil, "", err
+		var outs []outRecord
+		if err := json.Unmarshal(raw, &outs); err != nil { // coverage-ignore: the column is only written by the runner
+			return err
 		}
-		for i := range stored {
-			stored[i].ctx = ctx
-		}
-		return stored, "duplicate", nil
+		stored[id] = outs
 	}
-	outs, result, err := fn()
+	for i := range items {
+		if outs, ok := stored[items[i].id]; ok && items[i].dupOf < 0 {
+			items[i].outs = rebind(outs, ctx)
+		}
+	}
+	return rows.Err()
+}
+
+func rebind(outs []outRecord, ctx context.Context) []outRecord {
+	c := make([]outRecord, len(outs))
+	for i, o := range outs {
+		o.ctx = ctx
+		c[i] = o
+	}
+	return c
+}
+
+// handle runs the business handler for one new record and encodes its outputs.
+func (r *Runner) handle(ctx context.Context, tx pgx.Tx, topic string, it *item) ([]outRecord, error) {
+	pctx := ctx
+	if r.cfg.Tracer != nil {
+		var span trace.Span
+		pctx, span = r.cfg.Tracer.WithProcessSpan(it.rec)
+		defer span.End()
+	}
+	knobs := r.cfg.Control.Knobs()
+	if d := time.Duration(knobs.ProcessingLatencyMs) * time.Millisecond; d > 0 || knobs.ProcessingJitterMs > 0 {
+		d += time.Duration(r.cfg.Random()*float64(knobs.ProcessingJitterMs)) * time.Millisecond
+		if err := r.cfg.Sleep(ctx, d); err != nil {
+			return nil, err
+		}
+	}
+	if p := knobs.ProcessingErrorProbability; p > 0 && r.cfg.Random() < p {
+		return nil, ErrInjected
+	}
+	r.m.set.GetOrCreateHistogram(kafka.Label("lab_event_age_seconds", "topic", topic)).
+		Update(max(r.cfg.Now().Sub(it.meta.OccurredAt).Seconds(), 0))
+	start := r.cfg.Now()
+	outs, err := r.cfg.Handler.Handle(pctx, tx, Input{
+		Topic: topic, Partition: it.rec.Partition, Offset: it.rec.Offset, Key: string(it.rec.Key), Value: it.value, Meta: it.meta,
+	})
+	r.m.set.GetOrCreateHistogram(kafka.Label("lab_processing_duration_seconds", "topic", topic)).Update(r.cfg.Now().Sub(start).Seconds())
+	if IsPermanent(err) {
+		return nil, errRejected{id: it.id, err: err}
+	}
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	raw, _ := json.Marshal(outs)
-	if _, err := tx.Exec(ctx, `UPDATE processed_events SET outputs = $2 WHERE event_id = $1`, id, raw); err != nil { // coverage-ignore: connection loss mid-transaction
-		return nil, "", err
+	encoded := make([]outRecord, 0, len(outs))
+	for _, o := range outs {
+		b, err := r.cfg.Codec.Encode(o.Value)
+		if err != nil {
+			return nil, fmt.Errorf("%w %s: %v", errEncode, o.Topic, err)
+		}
+		encoded = append(encoded, outRecord{Topic: o.Topic, Key: o.Key, Value: b, ctx: pctx})
 	}
-	return outs, result, nil
+	return encoded, nil
 }
 
 func (r *Runner) dlqRecord(rec *kgo.Record, reason string, cause error) outRecord {
