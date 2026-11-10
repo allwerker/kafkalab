@@ -29,7 +29,10 @@ config:
   work_mem: 2MB
   maintenance_work_mem: 32MB
   max_connections: "120"
-  synchronous_commit: "on"
+  # Demo trade-off: commits return before the WAL flush (a PostgreSQL crash could lose the last
+  # ~600 ms of state while their outputs were already published). Not a lab scenario; it removes
+  # the fsync wait that otherwise caps every consumer at a few hundred records per second.
+  synchronous_commit: "off"
   wal_level: replica
   wal_buffers: 4MB
   min_wal_size: 64MB

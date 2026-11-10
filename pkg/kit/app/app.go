@@ -188,7 +188,7 @@ func (a *App) Control(ctx context.Context, dec control.Decoder) (*control.Client
 // Database opens PostgreSQL (waiting until it is reachable), applies the kit migrations and then
 // the service migrations. Transactions honour the Database Slowdown knob of ctl.
 func (a *App) Database(ctx context.Context, ctl runner.Knobs, migrations ...fs.FS) (*pg.DB, error) {
-	db, err := pg.Open(ctx, pg.Options{URL: a.Cfg.DatabaseURL, Metrics: a.Metrics, Log: a.Log, MaxConns: 8,
+	db, err := pg.Open(ctx, pg.Options{URL: a.Cfg.DatabaseURL, Metrics: a.Metrics, Log: a.Log, MaxConns: 10,
 		Latency: func() time.Duration { return time.Duration(ctl.Knobs().DbLatencyMs) * time.Millisecond }})
 	if err != nil {
 		return nil, err

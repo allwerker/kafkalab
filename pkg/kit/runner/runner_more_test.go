@@ -68,7 +68,7 @@ func Test_shouldUseSafeDefaultsWhenOnlyTheEssentialsAreConfigured(t *testing.T) 
 
 	// THEN: the group is the service name and retries back off up to five seconds
 	if cfg.Group != "inventory" || cfg.Backoff(1) != 250*time.Millisecond || cfg.Backoff(100) != 5*time.Second ||
-		cfg.DedupWindow != time.Hour || cfg.JanitorEvery != time.Minute || cfg.PartitionConcurrency != 4 || cfg.Metrics == nil || cfg.Sleep == nil {
+		cfg.DedupWindow != time.Hour || cfg.JanitorEvery != time.Minute || cfg.PartitionConcurrency != 6 || cfg.Metrics == nil || cfg.Sleep == nil {
 		t.Fatalf("unexpected defaults %+v", cfg)
 	}
 }
@@ -284,5 +284,35 @@ func Test_shouldProcessSeveralPartitionsAtOnceWhenOrdersArriveOnAllPartitions(t 
 	// THEN: partitions were processed in parallel, but never more than allowed
 	if peak.Load() < 2 || peak.Load() > 3 {
 		t.Fatalf("peak concurrency %d", peak.Load())
+	}
+}
+
+func Test_shouldChargeOnceWhenTheSameOrderAppearsTwiceInOneBatch(t *testing.T) {
+	// GIVEN: a duplicate order already waiting twice on the topic before payment starts
+	h := newHarness(t)
+	o := order("o-twice", 900)
+	h.produce(o)
+	h.produce(o)
+	var calls atomic.Int64
+
+	// WHEN: payment starts and reads both copies in one poll
+	h.start(h.runner(paymentHandler(&calls)))
+
+	// THEN: the customer is charged once and the identical outcome is published for both copies
+	out := h.read(contracts.TopicPaymentsCompleted, 2)
+	a, _ := h.serde.Decode(out[0].Value)
+	b, _ := h.serde.Decode(out[1].Value)
+	if calls.Load() != 1 || h.charges() != 1 || a.(*events.PaymentCompleted).Meta.EventID != b.(*events.PaymentCompleted).Meta.EventID {
+		t.Fatalf("calls=%d charges=%d", calls.Load(), h.charges())
+	}
+}
+
+func Test_shouldExplainTheRejectionWhenARecordIsRejected(t *testing.T) {
+	// GIVEN: a rejection of an order with a validation problem
+	err := errRejected{id: "evt-1", err: errors.New("order has no lines")}
+
+	// WHEN / THEN: its message names the event and the reason for the logs
+	if err.Error() != "rejected evt-1: order has no lines" {
+		t.Fatalf("got %q", err.Error())
 	}
 }
