@@ -1,1 +1,2 @@
 memory: 96Mi
+cpu: 100m
