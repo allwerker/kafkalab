@@ -75,7 +75,7 @@ Release names are chosen so these service names come out exactly (VM stack relea
 | PostgreSQL | 384Mi |
 | AKHQ | 448Mi (heap 256m) |
 | vmsingle / vmagent / vmalert / alertmanager | 512Mi / 192Mi / 96Mi / 64Mi |
-| Grafana | 256Mi |
+| Grafana | 512Mi (OOM at 256Mi, see ADR 0002) |
 | node-exporter / kube-state-metrics | 48Mi / 96Mi |
 | VictoriaLogs / collector | 256Mi / 96Mi |
 | VictoriaTraces | 256Mi |
