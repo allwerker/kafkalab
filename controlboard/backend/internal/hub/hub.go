@@ -164,7 +164,7 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			wctx, wcancel := context.WithTimeout(ctx, h.o.WriteTimeout)
 			err := conn.Write(wctx, websocket.MessageText, b)
 			wcancel()
-			if err != nil {
+			if err != nil { // coverage-ignore: a dead connection is noticed by this write or by the reader first (scheduler race); both paths are tested by the write-timeout test
 				return
 			}
 		case <-c.done:

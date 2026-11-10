@@ -184,14 +184,30 @@ func Test_shouldDisconnectTheClientWhenAWriteDoesNotFinishWithinTheTimeout(t *te
 		return []api.Message{{Type: api.MsgHello, Data: api.Hello{Version: 1}}}
 	}})
 
-	// WHEN: a client connects and the hello cannot be delivered in time
+	// WHEN: a client connects and keeps reading while the board keeps broadcasting
 	c := dial(t, serve(t, h))
+	readErr := make(chan error, 1)
+	go func() {
+		for {
+			if _, _, err := c.Read(context.Background()); err != nil {
+				readErr <- err
+				return
+			}
+		}
+	}()
+	deadline := time.Now().Add(5 * time.Second)
+	for h.Clients() != 0 && time.Now().Before(deadline) {
+		h.Broadcast(api.MsgTick, api.Tick{})
+		time.Sleep(time.Millisecond)
+	}
 
-	// THEN: the connection is dropped and the hub forgets the client
-	if _, _, err := c.Read(context.Background()); err == nil {
+	// THEN: a write misses its deadline, the hub forgets the client and the connection drops
+	if h.Clients() != 0 {
+		t.Fatal("slow client still registered")
+	}
+	if err := <-readErr; err == nil {
 		t.Fatal("expected the connection to be dropped")
 	}
-	waitClients(t, h, 0)
 }
 
 func Test_shouldRefuseThePlainRequestWhenItIsNotAWebSocketUpgrade(t *testing.T) {
