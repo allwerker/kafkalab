@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -15,8 +16,10 @@ import (
 	"kafkalab/controlboard/backend/internal/api"
 	"kafkalab/controlboard/backend/internal/api/fakeexp"
 	"kafkalab/controlboard/backend/internal/board"
+	"kafkalab/controlboard/backend/internal/experiments"
 	"kafkalab/controlboard/backend/internal/feed"
 	"kafkalab/controlboard/backend/internal/grafana"
+	"kafkalab/controlboard/backend/internal/k8s"
 	"kafkalab/controlboard/backend/internal/links"
 	"kafkalab/controlboard/backend/internal/observe"
 	"kafkalab/controlboard/backend/web"
@@ -38,6 +41,10 @@ func run(ctx context.Context, a *app.App) error {
 	boardURL := env.String("BOARD_URL", "http://board.localhost:8080")
 	gl := grafana.Links{Base: env.String("GRAFANA_URL", "http://grafana.localhost:8080")}
 	brokers := env.Int("BROKER_COUNT", 3)
+	grafanaAPI := env.String("GRAFANA_API_URL", "http://grafana.monitoring:80")
+	grafanaUser := env.String("GRAFANA_USER", "admin")
+	grafanaPassword := env.String("GRAFANA_PASSWORD", "admin")
+	chaosNetImage := env.String("CHAOS_NET_IMAGE", "")
 	origins := env.List("WS_ORIGINS", "localhost:5173,127.0.0.1:5173")
 	linkCfg, err := links.Load(env.String("LINKS_FILE", ""))
 	if err != nil {
@@ -48,13 +55,14 @@ func run(ctx context.Context, a *app.App) error {
 	}
 	hc := &http.Client{Timeout: 3 * time.Second}
 
-	codec, err := a.Serde(ctx, contracts.BusinessTopics...)
+	codec, err := a.Serde(ctx, append(append([]string{}, contracts.BusinessTopics...), contracts.TopicPlatformControl, contracts.TopicPlatformAudit)...)
 	if err != nil {
 		return err
 	}
 	var store alerts.Store = &alerts.Memory{}
+	var db *pg.DB
 	if a.Cfg.DatabaseURL != "" {
-		db, err := pg.Open(ctx, pg.Options{URL: a.Cfg.DatabaseURL, MaxConns: 4, Metrics: a.Metrics, Log: a.Log})
+		db, err = pg.Open(ctx, pg.Options{URL: a.Cfg.DatabaseURL, MaxConns: 4, Metrics: a.Metrics, Log: a.Log})
 		if err != nil {
 			return err
 		}
@@ -97,8 +105,42 @@ func run(ctx context.Context, a *app.App) error {
 			return alerts.FireTest(ctx, hc, alertmanagerURL, boardURL, time.Now())
 		},
 		Metrics: a.Metrics, Log: a.Log})
-	// The experiment engine replaces the fake here: experiments.New(..., b.Observer()).
-	b.SetExperiments(fakeexp.New(nil))
+	if db == nil {
+		a.Log.WarnContext(ctx, "DATABASE_URL not set: using the in-memory fake experiment engine")
+		b.SetExperiments(fakeexp.New(nil))
+	} else {
+		engineClient, err := kgo.NewClient(kafka.BaseOptions(a.Cfg.KafkaBrokers, contracts.ServiceControlboard+"-engine")...)
+		if err != nil {
+			return err
+		}
+		defer engineClient.Close()
+		var kube *k8s.Client
+		if kc, err := k8s.InCluster(k8s.ServiceAccountDir, os.Getenv); err == nil {
+			kube = k8s.New(kc)
+		} else {
+			a.Log.WarnContext(ctx, "no Kubernetes API: Kubernetes and broker scenarios are unavailable", "error", err)
+		}
+		eng, err := experiments.New(experiments.Config{
+			DB:            db,
+			Publisher:     experiments.NewKafkaPublisher(engineClient, codec),
+			Generations:   experiments.KafkaGenerations(a.Cfg.KafkaBrokers, codec),
+			Observer:      b.Observer(),
+			Kube:          kube,
+			Admin:         experiments.NewKafkaAdmin(engineClient),
+			Query:         experiments.VMQuery(vmURL),
+			Annotator:     &experiments.GrafanaAnnotator{Base: grafanaAPI, User: grafanaUser, Password: grafanaPassword},
+			Metrics:       a.Metrics,
+			Log:           a.Log,
+			GrafanaURL:    gl.Base,
+			ChaosNetImage: chaosNetImage,
+			TickEvery:     time.Second,
+		})
+		if err != nil {
+			return err
+		}
+		defer eng.Close()
+		b.SetExperiments(eng)
+	}
 	b.Register(a.Mux)
 	a.Mux.Handle("/", web.Handler(web.Dist()))
 	a.AddReadiness(func() bool { return true })

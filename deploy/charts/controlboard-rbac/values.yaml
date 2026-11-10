@@ -1,5 +1,35 @@
 serviceAccount: controlboard
 # Namespaces the experiment engine acts in (scale deployments, delete pods, ...).
 targetNamespaces: [commerce, kafka]
-# Filled in by the experiment engine ticket. Empty = the board has no Kubernetes rights.
-rules: []
+# Allowlist per namespace (experiment engine, docs/adr/0003-broker-chaos.md). Nothing grants
+# create/update of workloads, secrets, PVCs or the Kafka CR's spec.
+rules:
+  # Regional Outage, Rebalance Storm, reset, manual scale (+ lab.kafka/revert annotation),
+  # Consumer Crash Loop.
+  commerce:
+    - apiGroups: ["apps"]
+      resources: ["deployments"]
+      verbs: ["get", "list", "patch"]
+    - apiGroups: ["apps"]
+      resources: ["deployments/scale"]
+      verbs: ["get", "patch"]
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["get", "list", "delete"]
+  # Broker restart/crash/failure, chaos-net ephemeral containers, the Strimzi operator's scale
+  # (keeps a failed broker down), Kafka CR annotations (panic removes pause-reconciliation).
+  kafka:
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["get", "list", "delete"]
+    - apiGroups: [""]
+      resources: ["pods/ephemeralcontainers"]
+      verbs: ["patch"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "deployments/scale"]
+      resourceNames: ["strimzi-cluster-operator"]
+      verbs: ["get", "patch"]
+    - apiGroups: ["kafka.strimzi.io"]
+      resources: ["kafkas"]
+      resourceNames: ["kafka-lab"]
+      verbs: ["get", "patch"]

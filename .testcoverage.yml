@@ -12,4 +12,5 @@ exclude:
     - _gen\.go$                 # generated from schemas/*.avdl
     - /main\.go$                # wiring only, exercised by the end-to-end tests
     - ^pkg/kit/testkit # test infrastructure
+    - ^controlboard/backend/internal/k8s/k8sfake # test infrastructure (fake API server)
     - ^tools/               # developer tooling
