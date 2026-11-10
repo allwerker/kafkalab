@@ -1,0 +1,23 @@
+# One release per commerce service, all from the generic lab-service chart.
+# Image tags come from .tools/image-tags.yaml (written by `make images`).
+{{- $tags := dict }}
+{{- $tagFile := "../../.tools/image-tags.yaml" }}
+{{- if isFile $tagFile }}{{ $tags = (readFile $tagFile | fromYaml).images | default dict }}{{ end }}
+releases:
+{{- range $svc := list "order-generator" "payment" "inventory" "shipping" "notification" "analytics" }}
+{{- if hasKey $tags $svc }}
+  - name: {{ $svc }}
+    namespace: commerce
+    createNamespace: true
+    chart: ../charts/lab-service
+    values:
+      - name: {{ $svc }}
+        tracing: {{ $.Values.extras.traces }}
+        replicas: {{ $.Values.services.replicas }}
+        image:
+          registry: {{ $.Values.registry }}
+          tag: {{ get $tags $svc | quote }}
+      - ../values/services/{{ $svc }}.yaml
+    missingFileHandler: Info
+{{- end }}
+{{- end }}

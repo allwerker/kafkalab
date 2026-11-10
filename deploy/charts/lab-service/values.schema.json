@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["name", "image", "memory"],
+  "properties": {
+    "name": {"type": "string", "pattern": "^[a-z][a-z-]*$"},
+    "tier": {"enum": ["commerce", "control", "platform"]},
+    "replicas": {"type": "integer", "minimum": 0, "maximum": 6},
+    "image": {"type": "object", "required": ["tag"], "properties": {"tag": {"type": "string", "minLength": 1}}},
+    "memory": {"type": "string", "pattern": "^[0-9]+Mi$"},
+    "cpu": {"type": "string"},
+    "database": {"type": "boolean"},
+    "tracing": {"type": "boolean"},
+    "env": {"type": "object", "additionalProperties": {"type": "string"}}
+  }
+}

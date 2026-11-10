@@ -1,0 +1,97 @@
+{{- $name := required "name is required" .Values.name -}}
+{{- $mem := trimSuffix "Mi" .Values.memory | int -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels: &labels
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/part-of: kafka-lab
+    lab.kafka/tier: {{ .Values.tier }}
+spec:
+  replicas: {{ .Values.replicas }}
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      {{- with .Values.serviceAccount }}
+      serviceAccountName: {{ . }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: {{ $name }}
+          image: "{{ .Values.image.registry }}/{{ default $name .Values.image.repository }}:{{ required "image.tag is required (run make images)" .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            - { name: SERVICE_NAME, value: {{ $name | quote }} }
+            - { name: LOG_LEVEL, value: {{ .Values.logLevel | quote }} }
+            - { name: GOMEMLIMIT, value: "{{ div (mul $mem 80) 100 }}MiB" }
+            - { name: POD_NAME, valueFrom: { fieldRef: { fieldPath: metadata.name } } }
+            {{- if .Values.tracing }}
+            - { name: OTLP_TRACES_URL, value: "http://victoria-traces.monitoring:10428/insert/opentelemetry/v1/traces" }
+            {{- end }}
+            {{- if .Values.database }}
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: postgres-credentials, key: {{ $name | replace "-" "" }} } }
+            - name: DATABASE_URL
+              value: "postgres://{{ $name | replace "-" "" }}:$(DB_PASSWORD)@postgres.data:5432/lab?search_path={{ $name | replace "-" "" }}&sslmode=disable"
+            {{- end }}
+            {{- range $k, $v := .Values.env }}
+            - { name: {{ $k }}, value: {{ $v | quote }} }
+            {{- end }}
+          resources:
+            requests: { memory: {{ .Values.memory }}, cpu: {{ .Values.cpu }} }
+            limits: { memory: {{ .Values.memory }} }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+{{- if .Values.service.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/part-of: kafka-lab
+spec:
+  selector:
+    app.kubernetes.io/name: {{ $name }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+{{- end }}
+{{- with .Values.ingress.host }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $name }}
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: {{ . }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: {{ $name }}, port: { name: http } }
+{{- end }}

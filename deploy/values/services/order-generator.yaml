@@ -1,0 +1,5 @@
+database: false
+memory: 96Mi
+cpu: 100m
+env:
+  ORDERS_PER_SECOND: "50"

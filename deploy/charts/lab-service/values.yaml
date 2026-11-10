@@ -1,0 +1,22 @@
+# name: service name (= app.kubernetes.io/name, consumer group, DB role/schema)
+name: ""
+tier: commerce
+replicas: 1
+image:
+  registry: kafka-lab-registry.localhost:5111
+  repository: ""   # defaults to name
+  tag: ""          # set from .tools/image-tags.yaml
+memory: 64Mi
+cpu: 50m
+# database: true adds DATABASE_URL from Secret postgres-credentials (key = name)
+database: true
+tracing: true
+logLevel: info
+env: {}
+# serviceAccount / rbac are used by the controlboard only
+serviceAccount: ""
+service:
+  enabled: true
+ingress:
+  host: ""
+terminationGracePeriodSeconds: 30

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: lab-service
+description: Generic chart for every Kafka Lab Go service (one release per service)
+type: application
+version: 0.1.0
