@@ -282,3 +282,25 @@ func Test_shouldBackOffLongerButAtMostTwoSecondsWhenABrokerKeepsFailing(t *testi
 		t.Fatalf("got %v %v %v", first, fifth, hundredth)
 	}
 }
+
+func Test_shouldSumBufferedRecordsWhenAServiceHasSeveralClients(t *testing.T) {
+	// GIVEN: a service with a consumer and a separate producer client, one of them being rebuilt
+	cluster := testkit.NewCluster(t)
+	set := metrics.NewSet()
+	h := NewHooks(set)
+	cl, err := kgo.NewClient(kgo.SeedBrokers(cluster.Brokers...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cl.Close()
+
+	// WHEN: both are registered for the buffer gauges
+	h.WatchBuffers(func() *kgo.Client { return cl })
+	h.WatchBuffers(func() *kgo.Client { return nil })
+
+	// THEN: one gauge per buffer reports the sum, without failing on the missing client
+	out := exposition(set)
+	if strings.Count(out, "kafka_client_buffered_fetch_records") != 1 || !strings.Contains(out, "kafka_client_buffered_produce_records 0") {
+		t.Fatalf("unexpected exposition\n%s", out)
+	}
+}

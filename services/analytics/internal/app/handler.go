@@ -43,27 +43,27 @@ func (h *Handler) Handle(ctx context.Context, tx pgx.Tx, in runner.Input) ([]run
 		return nil, h.onCreated(ctx, tx, e)
 	case *events.OrderShipped:
 		return nil, h.onOutcome(ctx, tx, e.Meta, contracts.TopicOrdersShipped, domain.OutcomeShipped, func() {
-			h.inc("lab_orders_shipped_total", "carrier", e.Carrier, "warehouse", e.Warehouse)
+			h.inc(ctx, "lab_orders_shipped_total", "carrier", e.Carrier, "warehouse", e.Warehouse)
 		})
 	case *events.OrderCancelled:
 		return nil, h.onOutcome(ctx, tx, e.Meta, contracts.TopicOrdersCancelled, domain.OutcomeCancelled, func() {
-			h.inc("lab_orders_cancelled_total", "reason", string(e.Reason))
+			h.inc(ctx, "lab_orders_cancelled_total", "reason", string(e.Reason))
 		})
 	case *events.PaymentCompleted:
-		h.inc("lab_payments_total", "result", "completed", "reason", "")
+		h.inc(ctx, "lab_payments_total", "result", "completed", "reason", "")
 	case *events.PaymentFailed:
-		h.inc("lab_payments_total", "result", "failed", "reason", string(e.Reason))
+		h.inc(ctx, "lab_payments_total", "result", "failed", "reason", string(e.Reason))
 	case *events.PaymentRefunded:
-		h.inc("lab_refunds_total")
-		h.add("lab_refunded_cents_total", e.AmountCents)
+		h.inc(ctx, "lab_refunds_total")
+		h.add(ctx, "lab_refunded_cents_total", e.AmountCents)
 	case *events.InventoryReserved:
-		h.inc("lab_reservations_total", "result", "reserved", "reason", "")
+		h.inc(ctx, "lab_reservations_total", "result", "reserved", "reason", "")
 	case *events.InventoryRejected:
-		h.inc("lab_reservations_total", "result", "rejected", "reason", string(e.Reason))
+		h.inc(ctx, "lab_reservations_total", "result", "rejected", "reason", string(e.Reason))
 	case *events.InventoryReleased:
-		h.inc("lab_releases_total")
+		h.inc(ctx, "lab_releases_total")
 	case *events.NotificationSent:
-		h.inc("lab_notifications_total", "channel", string(e.Channel))
+		h.inc(ctx, "lab_notifications_total", "channel", string(e.Channel))
 	default:
 		return nil, runner.Permanent(fmt.Errorf("analytics does not handle %T", in.Value))
 	}
@@ -82,11 +82,11 @@ func (h *Handler) onCreated(ctx context.Context, tx pgx.Tx, e *events.OrderCreat
 		return err
 	}
 	if eff.Duplicate {
-		h.inc("lab_duplicates_total", "topic", contracts.TopicOrdersCreated)
+		h.inc(ctx, "lab_duplicates_total", "topic", contracts.TopicOrdersCreated)
 		return nil
 	}
-	h.inc("lab_orders_created_total", "region", seed.Region, "payment_method", string(e.PaymentMethod))
-	h.add(kafka.Label("lab_order_value_cents_total", "region", seed.Region), e.TotalCents)
+	h.inc(ctx, "lab_orders_created_total", "region", seed.Region, "payment_method", string(e.PaymentMethod))
+	h.add(ctx, kafka.Label("lab_order_value_cents_total", "region", seed.Region), e.TotalCents)
 	return nil
 }
 
@@ -102,7 +102,7 @@ func (h *Handler) onOutcome(ctx context.Context, tx pgx.Tx, meta events.EventMet
 		return err
 	}
 	if eff.Duplicate {
-		h.inc("lab_duplicates_total", "topic", topic)
+		h.inc(ctx, "lab_duplicates_total", "topic", topic)
 		return nil
 	}
 	count()
@@ -119,15 +119,19 @@ func (h *Handler) apply(ctx context.Context, tx pgx.Tx, eff domain.Effects, now 
 		}
 	}
 	if eff.RevenueCents > 0 {
-		h.add(kafka.Label("lab_revenue_cents_total", "region", eff.Next.Region), eff.RevenueCents)
+		h.add(ctx, kafka.Label("lab_revenue_cents_total", "region", eff.Next.Region), eff.RevenueCents)
 	}
 	return nil
 }
 
-func (h *Handler) inc(name string, labels ...string) {
-	h.Metrics.GetOrCreateCounter(kafka.Label(name, labels...)).Inc()
+// inc and add count only once the batch is committed (runner.OnCommit): a retried batch
+// must not count its orders twice.
+func (h *Handler) inc(ctx context.Context, name string, labels ...string) {
+	c := h.Metrics.GetOrCreateCounter(kafka.Label(name, labels...))
+	runner.OnCommit(ctx, c.Inc)
 }
 
-func (h *Handler) add(series string, cents int64) {
-	h.Metrics.GetOrCreateCounter(series).AddInt64(cents)
+func (h *Handler) add(ctx context.Context, series string, cents int64) {
+	c := h.Metrics.GetOrCreateCounter(series)
+	runner.OnCommit(ctx, func() { c.AddInt64(cents) })
 }

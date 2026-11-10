@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
@@ -16,7 +17,9 @@ import (
 // Client metrics show what brokers cannot see: time spent waiting on the network,
 // connection churn during broker failures and how full the client buffers are.
 type Hooks struct {
-	set *metrics.Set
+	set     *metrics.Set
+	mu      sync.Mutex
+	sources []func() *kgo.Client
 }
 
 // NewHooks returns hooks that register their metrics in set.
@@ -87,21 +90,35 @@ func (h *Hooks) OnFetchBatchRead(_ kgo.BrokerMetadata, topic string, _ int32, m 
 	h.counter("kafka_client_fetch_bytes_total", "topic", topic).Add(m.CompressedBytes)
 }
 
-// WatchBuffers exports the produce and fetch buffer fill level of the current client.
-// current may return nil while a client is being rebuilt.
+// WatchBuffers adds a client source to the produce and fetch buffer gauges. Several sources
+// (e.g. a consumer runner and a separate producer) are summed. current may return nil while
+// a client is being rebuilt.
 func (h *Hooks) WatchBuffers(current func() *kgo.Client) {
+	h.mu.Lock()
+	h.sources = append(h.sources, current)
+	first := len(h.sources) == 1
+	h.mu.Unlock()
+	if !first {
+		return
+	}
 	h.set.GetOrCreateGauge("kafka_client_buffered_produce_records", func() float64 {
-		if c := current(); c != nil {
-			return float64(c.BufferedProduceRecords())
-		}
-		return 0
+		return h.sum(func(c *kgo.Client) int64 { return c.BufferedProduceRecords() })
 	})
 	h.set.GetOrCreateGauge("kafka_client_buffered_fetch_records", func() float64 {
-		if c := current(); c != nil {
-			return float64(c.BufferedFetchRecords())
-		}
-		return 0
+		return h.sum(func(c *kgo.Client) int64 { return c.BufferedFetchRecords() })
 	})
+}
+
+func (h *Hooks) sum(f func(*kgo.Client) int64) float64 {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	var n int64
+	for _, src := range h.sources {
+		if c := src(); c != nil {
+			n += f(c)
+		}
+	}
+	return float64(n)
 }
 
 // Label formats a metric name with label pairs, e.g. Label("x_total", "topic", "t").

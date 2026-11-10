@@ -75,9 +75,12 @@ func BaseOptions(brokers []string, clientID string, hooks ...kgo.Hook) []kgo.Opt
 		kgo.ClientID(clientID),
 		kgo.WithHooks(hooks...),
 		kgo.RetryBackoffFn(retryBackoff),
-		// Keep client memory bounded during catch-up after an outage (Recovery Storm).
-		kgo.FetchMaxBytes(8 << 20),
-		kgo.FetchMaxPartitionBytes(1 << 20),
+		// Keep client memory bounded during catch-up after an outage (Recovery Storm): with 64 MiB
+		// pods, larger fetch buffers (franz-go defaults: 50 MiB / 1 MiB per partition, several
+		// concurrent fetches) OOM-kill a consumer that has a big backlog.
+		kgo.FetchMaxBytes(2 << 20),
+		kgo.FetchMaxPartitionBytes(256 << 10),
+		kgo.MaxConcurrentFetches(2),
 		kgo.MaxBufferedRecords(20_000),
 		kgo.MetadataMaxAge(30 * time.Second),
 	}
