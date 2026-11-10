@@ -15,6 +15,16 @@ Status: accepted · 2026-11-10 · verified on the live k3d cluster `kafka-lab`
 | Loss via `iptables -m statistic --mode random` | Works (`xt_statistic` loaded). |
 | Dead-man switch | Works: with an unreachable `HEALTH_URL` the helper self-reverted after 3 failed checks (12 s). |
 
+### Verified again through the engine (deployed controlboard, 2026-11-10)
+- `broker-outage` (broker 1, stopped early after ~8 s of URPs): helper applied, stop injected
+  `chaos-<id>-undo`, helper logged "undone externally", ISR complete 21 s later; Grafana got a region
+  annotation `chaos,broker,broker-outage`.
+- `kafka-broker-failure` (broker 1, 30 s): operator scaled to 0 with `lab.kafka/revert` owned by the
+  experiment, pod absent for the whole duration, operator back to 1 and annotation removed at the end.
+  **Under heavy host load (load average ~30) the restarted operator needed ~5 min before it recreated
+  the broker pod** (unloaded: ~35 s). The engine shows this as `recovering` until all brokers are up and
+  nothing is under-replicated (RecoveryTimeout 5 min). Keep broker failures short on a loaded laptop.
+
 ## Decisions
 
 1. **Rolling Restart** (`broker-rolling-restart`, not destructive): graceful `DELETE` of one broker pod.
