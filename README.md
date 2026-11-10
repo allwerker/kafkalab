@@ -87,3 +87,9 @@ make deploy    # helmfile sync of all releases
 
 Conventions (test naming, GIVEN/WHEN/THEN, coverage rules) are in `CLAUDE.md`;
 coverage exceptions with reasons in `docs/coverage-exceptions.md`.
+
+## License
+
+Code is licensed under the [Apache License, Version 2.0](LICENSE).
+Documentation in `docs/` is licensed under [CC BY 4.0](docs/LICENSE).
+Copyright 2026 allwerker eG, see [NOTICE](NOTICE).
