@@ -11,7 +11,7 @@ deploy-one: namespaces ## Deploy a single release: make deploy-one R=kafka-clust
 
 .PHONY: template
 template: ## Render all manifests without a cluster (used by CI)
-	@$(HELMFILE) template --skip-deps >/dev/null && echo "helmfile template OK"
+	@$(HELMFILE) template >/dev/null && echo "helmfile template OK"
 
 .PHONY: namespaces
 namespaces:
