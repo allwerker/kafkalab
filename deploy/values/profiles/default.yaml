@@ -1,0 +1,15 @@
+# Default profile: 3 dual-role Kafka nodes, all extras on. Target < 10 GB RAM.
+kafka:
+  replicas: 3
+  heap: 512m
+  memory: 1Gi
+  storage: 10Gi
+  defaultReplicationFactor: 3
+  minInsyncReplicas: 2
+extras:
+  logs: true
+  traces: true
+  akhq: true
+services:
+  replicas: 1
+registry: kafka-lab-registry.localhost:5111

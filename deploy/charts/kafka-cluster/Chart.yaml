@@ -1,0 +1,5 @@
+apiVersion: v2
+name: kafka-cluster
+description: Kafka Lab KRaft cluster (Strimzi custom resources), topics and JMX exporter config
+type: application
+version: 0.1.0

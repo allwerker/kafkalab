@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# kctl — kubectl that always talks to this project's k3d cluster.
+#
+# - works from any directory (resolves the repo through its own symlink-free path)
+# - uses the pinned kubectl from .tools/bin
+# - writes/refreshes a project-local kubeconfig (never touches ~/.kube/config)
+# - starts the cluster if it exists but is stopped
+# - exposes helper plugins from tools/kubectl-plugins (e.g. `kctl lab status`)
+#
+# Usage: kctl <kubectl args>      e.g. kctl get pods -A
+#        kctl --kubeconfig-path   prints the kubeconfig path (for helm, k9s, ...)
+#        kctl --env               prints `export KUBECONFIG=...` for eval
+set -euo pipefail
+
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+ROOT="$(dirname "$SELF")"
+TOOLS_BIN="$ROOT/.tools/bin"
+CLUSTER_NAME="${CLUSTER_NAME:-kafka-lab}"
+KUBECONFIG_FILE="$ROOT/.tools/kubeconfig-$CLUSTER_NAME"
+
+die() { echo "kctl: $*" >&2; exit 1; }
+
+[[ -x "$TOOLS_BIN/kubectl" ]] || die "toolchain missing — run 'make bootstrap' in $ROOT"
+export PATH="$TOOLS_BIN:$ROOT/tools/kubectl-plugins:$PATH"
+
+cluster_state() {
+  # prints: missing | stopped | running
+  local json
+  json="$(k3d cluster list "$CLUSTER_NAME" -o json 2>/dev/null || true)"
+  if [[ -z "$json" || "$json" == "[]" ]]; then echo missing; return; fi
+  local running total
+  running="$(jq '.[0].serversRunning' <<<"$json")"
+  total="$(jq '.[0].serversCount' <<<"$json")"
+  if [[ "$running" == "$total" && "$total" != "0" ]]; then echo running; else echo stopped; fi
+}
+
+ensure_cluster() {
+  case "$(cluster_state)" in
+    missing) die "cluster '$CLUSTER_NAME' does not exist — run 'make up' in $ROOT" ;;
+    stopped) echo "kctl: starting stopped cluster '$CLUSTER_NAME' ..." >&2
+             k3d cluster start "$CLUSTER_NAME" --wait >/dev/null
+             rm -f "$KUBECONFIG_FILE" ;;
+    running) ;;
+  esac
+  # The API port is fixed in the cluster config, but refresh if the file is missing or stale.
+  if [[ ! -s "$KUBECONFIG_FILE" ]] || ! kubectl --kubeconfig "$KUBECONFIG_FILE" --request-timeout=3s get --raw /readyz >/dev/null 2>&1; then
+    k3d kubeconfig get "$CLUSTER_NAME" >"$KUBECONFIG_FILE.tmp"
+    chmod 600 "$KUBECONFIG_FILE.tmp"
+    mv "$KUBECONFIG_FILE.tmp" "$KUBECONFIG_FILE"
+  fi
+}
+
+case "${1:-}" in
+  --kubeconfig-path) ensure_cluster; echo "$KUBECONFIG_FILE"; exit 0 ;;
+  --env) ensure_cluster; echo "export KUBECONFIG='$KUBECONFIG_FILE'"; exit 0 ;;
+esac
+
+ensure_cluster
+exec kubectl --kubeconfig "$KUBECONFIG_FILE" --context "k3d-$CLUSTER_NAME" "$@"

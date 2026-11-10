@@ -1,0 +1,15 @@
+# Entry point for `make deploy`. Sub-helmfiles run in file-name order (10-, 20-, ...), which is how
+# dependencies are expressed: cross-file `needs:` is not supported by helmfile.
+# Each release lives in its own file so parallel tickets never edit the same file. Profiles: default, lite.
+environments:
+  default:
+    values:
+      - values/profiles/default.yaml
+  lite:
+    values:
+      - values/profiles/lite.yaml
+---
+helmfiles:
+  - path: helmfile.d/*.yaml.gotmpl
+    values:
+      - {{ toYaml .Values | nindent 8 }}

@@ -1,0 +1,20 @@
+# Topic catalog — FROZEN CONTRACT (see docs/contracts/topics.md). Rendered into KafkaTopic resources.
+# Size-based retention with small segments keeps disk bounded under 1,000 orders/s.
+topicDefaults:
+  retentionMs: 21600000          # 6 h
+  retentionBytes: 268435456      # 256 MiB per partition
+  segmentBytes: 33554432         # 32 MiB
+topics:
+  - { name: orders.created,      partitions: 6 }
+  - { name: payments.completed,  partitions: 6 }
+  - { name: payments.failed,     partitions: 3 }
+  - { name: payments.refunded,   partitions: 3 }
+  - { name: inventory.reserved,  partitions: 6 }
+  - { name: inventory.rejected,  partitions: 3 }
+  - { name: inventory.released,  partitions: 3 }
+  - { name: orders.shipped,      partitions: 6 }
+  - { name: orders.cancelled,    partitions: 3 }
+  - { name: notifications.sent,  partitions: 6 }
+  - { name: orders.dlq,          partitions: 3 }
+  - { name: platform.control,    partitions: 1, compacted: true }
+  - { name: platform.audit,      partitions: 1 }

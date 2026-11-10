@@ -1,0 +1,16 @@
+clusterName: kafka-lab
+kafkaVersion: 4.3.2
+kafka:
+  replicas: 3
+  heap: 512m
+  memory: 1Gi
+  storage: 10Gi
+  defaultReplicationFactor: 3
+  minInsyncReplicas: 2
+# Content of the portable bundle's JMX exporter config (set via --set-file by helmfile).
+jmxConfig: ""
+topicDefaults:
+  retentionMs: 21600000
+  retentionBytes: 268435456
+  segmentBytes: 33554432
+topics: []

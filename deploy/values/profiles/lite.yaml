@@ -1,0 +1,15 @@
+# Lite profile: one Kafka node, extras off. Roughly 5 GB RAM. Broker scenarios are disabled.
+kafka:
+  replicas: 1
+  heap: 512m
+  memory: 1Gi
+  storage: 10Gi
+  defaultReplicationFactor: 1
+  minInsyncReplicas: 1
+extras:
+  logs: false
+  traces: false
+  akhq: true
+services:
+  replicas: 1
+registry: kafka-lab-registry.localhost:5111

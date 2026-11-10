@@ -1,0 +1,113 @@
+{{- $k := .Values.kafka -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.clusterName }}-jmx-exporter
+data:
+  kafka-jmx-exporter.yaml: |
+{{ required "jmxConfig is required" .Values.jmxConfig | indent 4 }}
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: dual-role
+  labels:
+    strimzi.io/cluster: {{ .Values.clusterName }}
+spec:
+  replicas: {{ $k.replicas }}
+  roles: [controller, broker]
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: {{ $k.storage }}
+        deleteClaim: true
+        kraftMetadata: shared
+  resources:
+    requests: { memory: {{ $k.memory }}, cpu: 200m }
+    limits: { memory: {{ $k.memory }} }
+  jvmOptions:
+    -Xms: {{ $k.heap }}
+    -Xmx: {{ $k.heap }}
+    -XX:
+      UseG1GC: "true"
+      MaxGCPauseMillis: "20"
+      ExplicitGCInvokesConcurrent: "true"
+  template:
+    pod:
+      metadata:
+        labels:
+          app.kubernetes.io/part-of: kafka-lab
+          lab.kafka/component: broker
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: {{ .Values.clusterName }}
+spec:
+  kafka:
+    version: {{ .Values.kafkaVersion }}
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+    config:
+      default.replication.factor: {{ $k.defaultReplicationFactor }}
+      min.insync.replicas: {{ $k.minInsyncReplicas }}
+      offsets.topic.replication.factor: {{ $k.defaultReplicationFactor }}
+      offsets.topic.num.partitions: 12
+      transaction.state.log.replication.factor: {{ $k.defaultReplicationFactor }}
+      transaction.state.log.min.isr: {{ $k.minInsyncReplicas }}
+      share.coordinator.state.topic.replication.factor: {{ $k.defaultReplicationFactor }}
+      share.coordinator.state.topic.min.isr: {{ $k.minInsyncReplicas }}
+      auto.create.topics.enable: false
+      group.initial.rebalance.delay.ms: 0
+      num.partitions: 3
+      log.segment.bytes: 33554432
+      log.retention.check.interval.ms: 60000
+      message.max.bytes: 2097152
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: {{ .Values.clusterName }}-jmx-exporter
+          key: kafka-jmx-exporter.yaml
+    template:
+      pod:
+        terminationGracePeriodSeconds: 60
+  entityOperator:
+    topicOperator:
+      resources:
+        requests: { memory: 256Mi, cpu: 50m }
+        limits: { memory: 320Mi }
+      jvmOptions:
+        -Xms: 96m
+        -Xmx: 160m
+---
+{{- range .Values.topics }}
+{{- $d := $.Values.topicDefaults }}
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: {{ .name | replace "." "-" }}
+  labels:
+    strimzi.io/cluster: {{ $.Values.clusterName }}
+spec:
+  topicName: {{ .name }}
+  partitions: {{ .partitions }}
+  replicas: {{ $k.defaultReplicationFactor }}
+  config:
+    min.insync.replicas: {{ $k.minInsyncReplicas }}
+    segment.bytes: {{ $d.segmentBytes }}
+    {{- if .compacted }}
+    cleanup.policy: compact
+    min.cleanable.dirty.ratio: 0.1
+    segment.ms: 600000
+    {{- else }}
+    retention.ms: {{ $d.retentionMs }}
+    retention.bytes: {{ $d.retentionBytes }}
+    {{- end }}
+---
+{{- end }}

@@ -1,0 +1,12 @@
+/.tools/
+/.data/
+/dist/
+coverage*.out
+coverage*.html
+node_modules/
+controlboard/web/dist/
+controlboard/backend/web/dist/
+*.test
+.env
+.idea/
+.vscode/

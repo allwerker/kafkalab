@@ -1,0 +1,16 @@
+releases:
+  - name: strimzi
+    namespace: kafka
+    createNamespace: true
+    chart: oci://quay.io/strimzi-helm/strimzi-kafka-operator
+    version: {{ requiredEnv "STRIMZI_VERSION" }}
+    wait: true
+    values:
+      - watchNamespaces: []
+        generateNetworkPolicy: false     # partitions are injected inside the pod netns, not via NetworkPolicy
+        generatePodDisruptionBudget: false # chaos needs to delete broker pods
+        fullReconciliationIntervalMs: 60000
+        resources:
+          requests: { memory: 320Mi, cpu: 100m }
+          limits: { memory: 384Mi }
+        logLevel: WARN

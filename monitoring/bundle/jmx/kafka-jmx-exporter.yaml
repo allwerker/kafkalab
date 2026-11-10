@@ -1,0 +1,214 @@
+# Kafka Lab portable bundle — curated Prometheus JMX exporter config for Kafka 4.x (KRaft).
+#
+# Performance-safe by design (see docs/metrics-performance-impact.md):
+#  * includeObjectNames is an allowlist: the exporter only walks these MBeans. Per-partition beans
+#    (kafka.log:type=Log, kafka.cluster:type=Partition) and per-client quota beans are never queried,
+#    because their count grows with partitions x clients and dominates scrape cost on big clusters.
+#  * Partition-level data (sizes, offsets, lag) comes from KMinion over the Kafka protocol instead.
+#  * Metric names follow Strimzi's example config, so the bundle dashboards also work on clusters
+#    that already run Strimzi's kafka-metrics.yaml.
+#  * JVM metrics (jvm_*) come from the agent's built-in JVM collectors and are not affected by the allowlist.
+lowercaseOutputName: true
+lowercaseOutputLabelNames: false
+includeObjectNames:
+  - "kafka.server:type=BrokerTopicMetrics,*"
+  - "kafka.server:type=ReplicaManager,*"
+  - "kafka.server:type=ReplicaFetcherManager,*"
+  - "kafka.server:type=KafkaRequestHandlerPool,*"
+  - "kafka.server:type=DelayedOperationPurgatory,*"
+  - "kafka.server:type=FetchSessionCache,*"
+  - "kafka.server:type=KafkaServer,name=BrokerState"
+  - "kafka.server:type=raft-metrics"
+  - "kafka.server:type=raft-channel-metrics"
+  - "kafka.server:type=broker-metadata-metrics"
+  - "kafka.server:type=group-coordinator-metrics"
+  - "kafka.server:type=socket-server-metrics,listener=*,networkProcessor=*"
+  - "kafka.server:type=socket-server-metrics,*"
+  - "kafka.server:type=Produce"
+  - "kafka.server:type=Fetch"
+  - "kafka.server:type=Request"
+  - "kafka.network:type=RequestChannel,*"
+  - "kafka.network:type=SocketServer,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=Produce,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=FetchConsumer,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=FetchFollower,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=Metadata,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=OffsetCommit,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=OffsetFetch,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=ListOffsets,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=JoinGroup,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=SyncGroup,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=Heartbeat,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=ConsumerGroupHeartbeat,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=FindCoordinator,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=Fetch,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=Vote,*"
+  - "kafka.network:type=RequestMetrics,name=*,request=BrokerHeartbeat,*"
+  - "kafka.network:type=RequestMetrics,name=ErrorsPerSec,*"
+  - "kafka.controller:type=KafkaController,*"
+  - "kafka.controller:type=ControllerStats,*"
+  - "kafka.controller:type=ControllerEventManager,*"
+  - "kafka.controller:type=QuorumController,*"
+  - "kafka.log:type=LogFlushStats,*"
+  - "kafka.log:type=LogManager,name=OfflineLogDirectoryCount"
+  - "kafka.log:type=LogCleanerManager,*"
+  - "kafka.coordinator.group:type=GroupMetadataManager,*"
+  - "kafka.server:type=group-coordinator-metrics,*"
+  - "kafka.server:type=share-group-metrics,*"
+  - "kafka.server:type=transaction-coordinator-metrics,*"
+  - "kafka.server:type=controller-channel-metrics,*"
+  - "kafka.server:type=node-metrics,*"
+  - "kafka.server:type=app-info,*"
+excludeObjectNames:
+  - "kafka.server:type=BrokerTopicMetrics,name=*,topic=__*"
+rules:
+  # ---- KRaft / raft metrics (attribute style, no name= key) -------------------------------------
+  - pattern: "kafka.server<type=raft-metrics><>(.+-total|.+-max):"
+    name: kafka_server_raftmetrics_$1
+    type: COUNTER
+  - pattern: "kafka.server<type=raft-metrics><>(current-state): (.+)"
+    name: kafka_server_raftmetrics_$1
+    value: 1
+    type: UNTYPED
+    labels:
+      $1: "$2"
+  - pattern: "kafka.server<type=raft-metrics><>(.+):"
+    name: kafka_server_raftmetrics_$1
+    type: GAUGE
+  - pattern: "kafka.server<type=raft-channel-metrics><>(incoming-byte-total|outgoing-byte-total|request-total|response-total):"
+    name: kafka_server_raftchannelmetrics_$1
+    type: COUNTER
+  - pattern: "kafka.server<type=broker-metadata-metrics><>(.+):"
+    name: kafka_server_brokermetadatametrics_$1
+    type: GAUGE
+  - pattern: "kafka.server<type=(group-coordinator-metrics|share-group-metrics|transaction-coordinator-metrics), (.+)=(.+)><>(.+-total):"
+    name: kafka_server_$1_$4
+    type: COUNTER
+    labels:
+      $2: "$3"
+  - pattern: "kafka.server<type=(group-coordinator-metrics|share-group-metrics|transaction-coordinator-metrics), (.+)=(.+)><>(.+):"
+    name: kafka_server_$1_$4
+    type: GAUGE
+    labels:
+      $2: "$3"
+  - pattern: "kafka.server<type=(group-coordinator-metrics|share-group-metrics|transaction-coordinator-metrics)><>(.+-total):"
+    name: kafka_server_$1_$2
+    type: COUNTER
+  - pattern: "kafka.server<type=(group-coordinator-metrics|share-group-metrics|transaction-coordinator-metrics)><>(.+):"
+    name: kafka_server_$1_$2
+    type: GAUGE
+  # ---- socket server (per listener / network processor) -----------------------------------------
+  - pattern: "kafka.server<type=socket-server-metrics, listener=([^,]+), networkProcessor=([^,]+)><>(connection-creation-total|connection-close-total|failed-authentication-total|incoming-byte-total|outgoing-byte-total|request-total|response-total):"
+    name: kafka_server_socketservermetrics_$3
+    type: COUNTER
+    labels:
+      listener: "$1"
+      networkProcessor: "$2"
+  - pattern: "kafka.server<type=socket-server-metrics, listener=([^,]+), networkProcessor=([^,]+)><>(connection-count|io-wait-ratio|io-ratio):"
+    name: kafka_server_socketservermetrics_$3
+    type: GAUGE
+    labels:
+      listener: "$1"
+      networkProcessor: "$2"
+  - pattern: "kafka.server<type=socket-server-metrics, listener=([^,]+)><>(connection-accept-rate|connection-accept-throttle-time):"
+    name: kafka_server_socketservermetrics_$2
+    type: GAUGE
+    labels:
+      listener: "$1"
+  # ---- quota-type aggregates (no client id) -------------------------------------------------------
+  - pattern: "kafka.server<type=(Produce|Fetch|Request)><>queue-size"
+    name: kafka_server_$1_queue_size
+    type: GAUGE
+  # ---- request metrics (allowlisted request types) -----------------------------------------------
+  - pattern: kafka.network<type=RequestMetrics, name=(.+)PerSec, request=(.+), error=(.+)><>Count
+    name: kafka_network_requestmetrics_$1_total
+    type: COUNTER
+    labels:
+      request: "$2"
+      error: "$3"
+  - pattern: kafka.network<type=RequestMetrics, name=(.+)PerSec, request=(.+), version=(.+)><>Count
+    name: kafka_network_requestmetrics_$1_total
+    type: COUNTER
+    labels:
+      request: "$2"
+  - pattern: kafka.network<type=RequestMetrics, name=(.+)PerSec, request=(.+)><>Count
+    name: kafka_network_requestmetrics_$1_total
+    type: COUNTER
+    labels:
+      request: "$2"
+  - pattern: kafka.network<type=RequestMetrics, name=(TotalTimeMs|RequestQueueTimeMs|LocalTimeMs|RemoteTimeMs|ResponseQueueTimeMs|ResponseSendTimeMs|ThrottleTimeMs), request=(.+)><>Count
+    name: kafka_network_requestmetrics_$1_count
+    type: UNTYPED
+    labels:
+      request: "$2"
+  - pattern: kafka.network<type=RequestMetrics, name=(TotalTimeMs|RequestQueueTimeMs|LocalTimeMs|RemoteTimeMs|ResponseQueueTimeMs|ResponseSendTimeMs), request=(.+)><>(50|99|999)thPercentile
+    name: kafka_network_requestmetrics_$1
+    type: GAUGE
+    labels:
+      request: "$2"
+      quantile: "0.$3"
+  - pattern: kafka.network<type=RequestMetrics, name=(TotalTimeMs|RequestBytes), request=(.+)><>Mean
+    name: kafka_network_requestmetrics_$1_mean
+    type: GAUGE
+    labels:
+      request: "$2"
+  # ---- generic Strimzi-compatible rules ----------------------------------------------------------
+  - pattern: kafka.(\w+)<type=(.+), name=(.+)Percent\w*><>MeanRate
+    name: kafka_$1_$2_$3_percent
+    type: GAUGE
+  - pattern: kafka.(\w+)<type=(.+), name=(.+)Percent\w*><>Value
+    name: kafka_$1_$2_$3_percent
+    type: GAUGE
+  - pattern: kafka.(\w+)<type=(.+), name=(.+)Percent\w*, (.+)=(.+)><>Value
+    name: kafka_$1_$2_$3_percent
+    type: GAUGE
+    labels:
+      "$4": "$5"
+  - pattern: kafka.(\w+)<type=(.+), name=(.+)PerSec\w*, (.+)=(.+), (.+)=(.+)><>Count
+    name: kafka_$1_$2_$3_total
+    type: COUNTER
+    labels:
+      "$4": "$5"
+      "$6": "$7"
+  - pattern: kafka.(\w+)<type=(.+), name=(.+)PerSec\w*, (.+)=(.+)><>Count
+    name: kafka_$1_$2_$3_total
+    type: COUNTER
+    labels:
+      "$4": "$5"
+  - pattern: kafka.(\w+)<type=(.+), name=(.+)PerSec\w*><>Count
+    name: kafka_$1_$2_$3_total
+    type: COUNTER
+  - pattern: kafka.(\w+)<type=(.+), name=(.+), (.+)=(.+), (.+)=(.+)><>Value
+    name: kafka_$1_$2_$3
+    type: GAUGE
+    labels:
+      "$4": "$5"
+      "$6": "$7"
+  - pattern: kafka.(\w+)<type=(.+), name=(.+), (.+)=(.+)><>Value
+    name: kafka_$1_$2_$3
+    type: GAUGE
+    labels:
+      "$4": "$5"
+  - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
+    name: kafka_$1_$2_$3
+    type: GAUGE
+  # Histograms (Yammer) exported as summaries: count + selected percentiles.
+  - pattern: kafka.(\w+)<type=(.+), name=(.+), (.+)=(.+)><>Count
+    name: kafka_$1_$2_$3_count
+    type: UNTYPED
+    labels:
+      "$4": "$5"
+  - pattern: kafka.(\w+)<type=(.+), name=(.+), (.+)=(.*)><>(50|99|999)thPercentile
+    name: kafka_$1_$2_$3
+    type: GAUGE
+    labels:
+      "$4": "$5"
+      quantile: "0.$6"
+  - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Count
+    name: kafka_$1_$2_$3_count
+    type: UNTYPED
+  - pattern: kafka.(\w+)<type=(.+), name=(.+)><>(50|99|999)thPercentile
+    name: kafka_$1_$2_$3
+    type: GAUGE
+    labels:
+      quantile: "0.$4"

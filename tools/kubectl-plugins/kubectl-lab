@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# kubectl plugin: `kctl lab <command>` — shortcuts for the Kafka Lab.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.." && pwd)"
+K="$ROOT/kctl"
+LB_PORT="${LB_PORT:-8080}"
+
+urls() {
+  cat <<EOF
+  Controlboard   http://board.localhost:$LB_PORT
+  Grafana        http://grafana.localhost:$LB_PORT
+  AKHQ           http://akhq.localhost:$LB_PORT
+  VictoriaMetrics http://vm.localhost:$LB_PORT/vmui
+  vmagent        http://vmagent.localhost:$LB_PORT/targets
+  vmalert        http://vmalert.localhost:$LB_PORT
+  Alertmanager   http://alertmanager.localhost:$LB_PORT
+  VictoriaLogs   http://logs.localhost:$LB_PORT/select/vmui
+EOF
+}
+
+case "${1:-help}" in
+  status)
+    "$K" get nodes -o wide
+    echo
+    "$K" get pods -A --field-selector=status.phase!=Succeeded \
+      -o custom-columns='NS:.metadata.namespace,POD:.metadata.name,READY:.status.containerStatuses[*].ready,STATUS:.status.phase,RESTARTS:.status.containerStatuses[0].restartCount' \
+      | grep -vE '^kube-system' || true
+    echo; echo "URLs:"; urls ;;
+  urls) urls ;;
+  kafka) shift; "$K" -n kafka exec -i kafka-lab-dual-role-0 -c kafka -- /opt/kafka/bin/"${1:-kafka-topics.sh}" --bootstrap-server localhost:9092 "${@:2}" ;;
+  topics) "$K" -n kafka exec kafka-lab-dual-role-0 -c kafka -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list ;;
+  groups) "$K" -n kafka exec kafka-lab-dual-role-0 -c kafka -- /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --all-groups ;;
+  psql) "$K" -n data exec -it postgres-0 -- psql -U postgres -d lab ;;
+  logs) shift; "$K" -n commerce logs -f "deploy/${1:?service name}" ;;
+  top) "$K" top pods -A --sort-by=memory 2>/dev/null || echo "metrics API not available; see Grafana 'Stack Footprint'" ;;
+  *) cat <<EOF
+kctl lab <command>
+  status   nodes, pods and URLs
+  urls     web UI links
+  topics   list Kafka topics
+  groups   describe all consumer groups
+  kafka <script> [args]  run a Kafka CLI script on broker 0
+  psql     open psql on the lab database
+  logs <service>  follow a commerce service's logs
+EOF
+  ;;
+esac

@@ -1,0 +1,11 @@
+releases:
+  - name: kafka-cluster
+    namespace: kafka
+    chart: ../charts/kafka-cluster
+    values:
+      - kafka: {{ toYaml .Values.kafka | nindent 10 }}
+        kafkaVersion: {{ requiredEnv "KAFKA_VERSION" }}
+      - ../topics.yaml
+    set:
+      - name: jmxConfig
+        file: ../../monitoring/bundle/jmx/kafka-jmx-exporter.yaml
