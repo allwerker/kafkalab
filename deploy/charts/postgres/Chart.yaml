@@ -1,0 +1,6 @@
+apiVersion: v2
+name: postgres
+description: Kafka Lab PostgreSQL 18 (single instance, low memory) with postgres_exporter sidecar and per-service roles/schemas
+type: application
+version: 0.1.0
+appVersion: "18.6"

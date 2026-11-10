@@ -1,0 +1,62 @@
+# VictoriaLogs (+ collector DaemonSet) and VictoriaTraces. Grafana datasources `vlogs` and `traces`
+# come from the lab-observability chart (sidecar label grafana_datasource).
+repositories:
+  - name: vm
+    url: https://victoriametrics.github.io/helm-charts/
+releases:
+{{- if .Values.extras.logs }}
+  - name: victoria-logs
+    namespace: monitoring
+    chart: vm/victoria-logs-single
+    version: 0.13.12
+    values:
+      - server:
+          fullnameOverride: victoria-logs
+          retentionPeriod: 3d
+          retentionDiskSpaceUsage: 3GiB
+          persistentVolume: { enabled: true, size: 5Gi }
+          resources:
+            requests: { memory: 256Mi, cpu: 50m }
+            limits: { memory: 256Mi }
+          extraEnvs:
+            - { name: GOMAXPROCS, value: "2" }
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts: [{ name: logs.localhost, path: [/], port: http }]
+  - name: victoria-logs-collector
+    namespace: monitoring
+    chart: vm/victoria-logs-collector
+    version: 0.3.8
+    values:
+      - remoteWrite:
+          - url: http://victoria-logs:9428
+        collector:
+          msgField: [msg, message, log]
+          timeField: [time, ts, timestamp]
+        resources:
+          requests: { memory: 96Mi, cpu: 20m }
+          limits: { memory: 96Mi }
+{{- end }}
+{{- if .Values.extras.traces }}
+  - name: victoria-traces
+    namespace: monitoring
+    chart: vm/victoria-traces-single
+    version: 0.1.13
+    values:
+      - server:
+          fullnameOverride: victoria-traces
+          retentionPeriod: 1d
+          persistentVolume: { enabled: true, size: 3Gi }
+          resources:
+            requests: { memory: 256Mi, cpu: 50m }
+            limits: { memory: 256Mi }
+          extraEnvs:
+            - { name: GOMAXPROCS, value: "2" }
+{{- end }}
+  - name: lab-observability
+    namespace: monitoring
+    chart: ../charts/lab-observability
+    values:
+      - logs: {{ .Values.extras.logs }}
+        traces: {{ .Values.extras.traces }}

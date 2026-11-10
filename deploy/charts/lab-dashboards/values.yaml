@@ -1,0 +1,9 @@
+# Filled by deploy/helmfile.d/42-lab-dashboards.yaml.gotmpl from monitoring/{bundle,demo}/dashboards/*.json.
+# folders.<key>.title is the Grafana folder; folders.<key>.dashboards maps file name -> JSON content.
+folders:
+  bundle:
+    title: Kafka (bundle)
+    dashboards: {}
+  demo:
+    title: Kafka Lab
+    dashboards: {}

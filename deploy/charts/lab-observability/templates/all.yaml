@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab-datasources-logs-traces
+  labels:
+    grafana_datasource: "1"
+data:
+  logs-traces.yaml: |
+    apiVersion: 1
+    datasources:
+    {{- if .Values.logs }}
+      - name: VictoriaLogs
+        uid: vlogs
+        type: victoriametrics-logs-datasource
+        access: proxy
+        url: http://victoria-logs.monitoring:9428
+        jsonData:
+          derivedFields:
+            - name: trace
+              matcherType: label
+              matcherRegex: trace_id
+              datasourceUid: traces
+              url: "${__value.raw}"
+    {{- end }}
+    {{- if .Values.traces }}
+      - name: Traces
+        uid: traces
+        type: jaeger
+        access: proxy
+        url: http://victoria-traces.monitoring:10428/select/jaeger
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: vlogs
+            filterByTraceID: true
+            customQuery: true
+            query: 'trace_id:"${__trace.traceId}"'
+    {{- end }}
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: kminion
+spec:
+  namespaceSelector: { matchNames: [kafka] }
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kminion
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+      relabelConfigs:
+        - targetLabel: kafka_cluster
+          replacement: kafka-lab

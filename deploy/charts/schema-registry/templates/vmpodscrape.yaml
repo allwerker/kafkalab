@@ -1,0 +1,16 @@
+# Karapace serves Prometheus metrics (karapace_schema_reader_*, http_requests_*, process_*) on /metrics.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: schema-registry
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: schema-registry
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      relabelConfigs:
+        - targetLabel: service
+          replacement: schema-registry

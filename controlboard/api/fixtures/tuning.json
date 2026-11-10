@@ -1,0 +1,156 @@
+{
+  "settings": [
+    {
+      "key": "acks",
+      "label": "Producer acks",
+      "type": "select",
+      "options": [
+        "all",
+        "leader",
+        "none"
+      ],
+      "default": "all",
+      "lossy": [
+        "leader",
+        "none"
+      ],
+      "help": "How many replicas must confirm a write. Anything but 'all' disables idempotence and can lose records on broker failure."
+    },
+    {
+      "key": "lingerMs",
+      "label": "linger.ms",
+      "type": "number",
+      "min": 0,
+      "max": 1000,
+      "step": 5,
+      "default": 5,
+      "help": "How long the producer waits to fill a batch. Higher = bigger batches, more latency."
+    },
+    {
+      "key": "batchMaxBytes",
+      "label": "Max batch bytes",
+      "type": "number",
+      "min": 16384,
+      "max": 16777216,
+      "step": 16384,
+      "default": 1048576,
+      "help": "Upper bound of one record batch per partition."
+    },
+    {
+      "key": "compression",
+      "label": "Compression",
+      "type": "select",
+      "options": [
+        "none",
+        "gzip",
+        "snappy",
+        "lz4",
+        "zstd"
+      ],
+      "default": "snappy",
+      "help": "Codec for record batches. zstd = smallest, lz4 = fastest."
+    },
+    {
+      "key": "fetchMaxBytes",
+      "label": "Fetch max bytes",
+      "type": "number",
+      "min": 1048576,
+      "max": 104857600,
+      "step": 1048576,
+      "default": 52428800,
+      "help": "Max bytes a single fetch response may return."
+    },
+    {
+      "key": "fetchMaxWaitMs",
+      "label": "Fetch max wait",
+      "type": "number",
+      "min": 0,
+      "max": 10000,
+      "step": 50,
+      "default": 5000,
+      "help": "How long the broker may hold a fetch waiting for fetch.min.bytes."
+    },
+    {
+      "key": "fetchMinBytes",
+      "label": "Fetch min bytes",
+      "type": "number",
+      "min": 1,
+      "max": 1048576,
+      "step": 1024,
+      "default": 1,
+      "help": "Broker waits until this many bytes are available (or the max wait passed)."
+    },
+    {
+      "key": "maxPollRecords",
+      "label": "Max poll records",
+      "type": "number",
+      "min": 1,
+      "max": 10000,
+      "step": 10,
+      "default": 500,
+      "help": "Records handed to the handler per poll. Small values reduce throughput."
+    }
+  ],
+  "services": {
+    "order-generator": {
+      "acks": "all",
+      "lingerMs": 5,
+      "batchMaxBytes": 1048576,
+      "compression": "snappy",
+      "fetchMaxBytes": 52428800,
+      "fetchMaxWaitMs": 5000,
+      "fetchMinBytes": 1,
+      "maxPollRecords": 500
+    },
+    "payment": {
+      "acks": "leader",
+      "lingerMs": 20,
+      "batchMaxBytes": 1048576,
+      "compression": "snappy",
+      "fetchMaxBytes": 52428800,
+      "fetchMaxWaitMs": 5000,
+      "fetchMinBytes": 1,
+      "maxPollRecords": 500
+    },
+    "inventory": {
+      "acks": "all",
+      "lingerMs": 5,
+      "batchMaxBytes": 1048576,
+      "compression": "snappy",
+      "fetchMaxBytes": 52428800,
+      "fetchMaxWaitMs": 5000,
+      "fetchMinBytes": 1,
+      "maxPollRecords": 500
+    },
+    "shipping": {
+      "acks": "all",
+      "lingerMs": 5,
+      "batchMaxBytes": 1048576,
+      "compression": "snappy",
+      "fetchMaxBytes": 52428800,
+      "fetchMaxWaitMs": 5000,
+      "fetchMinBytes": 1,
+      "maxPollRecords": 500
+    },
+    "notification": {
+      "acks": "all",
+      "lingerMs": 5,
+      "batchMaxBytes": 1048576,
+      "compression": "snappy",
+      "fetchMaxBytes": 52428800,
+      "fetchMaxWaitMs": 5000,
+      "fetchMinBytes": 1,
+      "maxPollRecords": 500
+    },
+    "analytics": {
+      "acks": "all",
+      "lingerMs": 5,
+      "batchMaxBytes": 1048576,
+      "compression": "snappy",
+      "fetchMaxBytes": 52428800,
+      "fetchMaxWaitMs": 5000,
+      "fetchMinBytes": 1,
+      "maxPollRecords": 500
+    }
+  }
+}

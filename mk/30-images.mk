@@ -1,12 +1,15 @@
 # Container images for Go binaries: build on the host, wrap in distroless, push to the k3d registry.
 # Every main package under services/ and controlboard/backend/cmd/ becomes one image.
-IMAGE_DIRS = $(sort $(dir $(wildcard $(ROOT)/services/*/main.go $(ROOT)/controlboard/backend/cmd/*/main.go)))
+ALL_IMAGE_DIRS = $(sort $(dir $(wildcard $(ROOT)/services/*/main.go $(ROOT)/controlboard/backend/cmd/*/main.go)))
+# SERVICES="payment shipping" limits the build; tags of other images in .tools/image-tags.yaml are kept.
+IMAGE_DIRS = $(if $(SERVICES),$(foreach s,$(SERVICES),$(filter %/$(s)/,$(ALL_IMAGE_DIRS))),$(ALL_IMAGE_DIRS))
 PUSH_REGISTRY := 127.0.0.1:$(REGISTRY_PORT)
 IMAGE_TAGS := $(ROOT)/.tools/image-tags.yaml
 
 .PHONY: images
 images: ## Build and push all Go service images; writes .tools/image-tags.yaml for helmfile
 	@mkdir -p $(ROOT)/dist
+	@if [ -f $(IMAGE_TAGS) ]; then grep -v '^images:' $(IMAGE_TAGS) > $(IMAGE_TAGS).old || true; else : > $(IMAGE_TAGS).old; fi
 	@echo "images:" > $(IMAGE_TAGS).tmp
 	@for dir in $(IMAGE_DIRS); do \
 	  name=$$(basename $$dir); \
@@ -18,6 +21,7 @@ images: ## Build and push all Go service images; writes .tools/image-tags.yaml f
 	    echo "  pushed $$name:$$tag"; \
 	  fi; \
 	  echo "  $$name: \"$$tag\"" >> $(IMAGE_TAGS).tmp; \
+	  sed -i "/^  $$name: /d" $(IMAGE_TAGS).old; \
 	done
-	@mv $(IMAGE_TAGS).tmp $(IMAGE_TAGS)
+	@cat $(IMAGE_TAGS).old >> $(IMAGE_TAGS).tmp && mv $(IMAGE_TAGS).tmp $(IMAGE_TAGS) && rm -f $(IMAGE_TAGS).old
 	@cat $(IMAGE_TAGS)

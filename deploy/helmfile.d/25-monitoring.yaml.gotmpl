@@ -1,0 +1,16 @@
+# T106: VictoriaMetrics k8s stack (operator + CRDs, vmsingle, vmagent, vmalert, alertmanager, Grafana,
+# node-exporter, kube-state-metrics). Numbered 25 so the VM CRDs exist before the data plane (30+) and
+# the scrape objects (41) are applied.
+repositories:
+  - name: vm
+    url: https://victoriametrics.github.io/helm-charts/
+releases:
+  - name: vmks
+    namespace: monitoring
+    createNamespace: true
+    chart: vm/victoria-metrics-k8s-stack
+    version: {{ requiredEnv "VM_K8S_STACK_CHART_VERSION" }}
+    wait: true
+    timeout: 900
+    values:
+      - ../values/monitoring/vmks.yaml.gotmpl

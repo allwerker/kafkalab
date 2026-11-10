@@ -1,0 +1,4 @@
+# Raw content of monitoring/bundle/scrape/strimzi-vmpodscrape.yaml (set via helmfile `set ... file:`).
+strimziScrape: ""
+# Scrape AKHQ's management endpoint (only when AKHQ is installed).
+akhq: true

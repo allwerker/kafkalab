@@ -12,3 +12,4 @@ controlboard/backend/web/dist/
 .vscode/
 /.claude/worktrees/
 coverage.out
+/.tools

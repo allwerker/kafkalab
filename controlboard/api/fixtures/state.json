@@ -1,0 +1,422 @@
+{
+  "simulation": "running",
+  "chaosArmed": true,
+  "services": [
+    {
+      "name": "order-generator",
+      "replicas": 1,
+      "readyReplicas": 1,
+      "paused": false,
+      "desiredGeneration": 3,
+      "appliedGeneration": 3,
+      "health": "up",
+      "knobs": {}
+    },
+    {
+      "name": "payment",
+      "replicas": 2,
+      "readyReplicas": 2,
+      "paused": false,
+      "desiredGeneration": 3,
+      "appliedGeneration": 3,
+      "health": "up",
+      "knobs": {}
+    },
+    {
+      "name": "inventory",
+      "replicas": 2,
+      "readyReplicas": 2,
+      "paused": false,
+      "desiredGeneration": 3,
+      "appliedGeneration": 3,
+      "health": "up",
+      "knobs": {}
+    },
+    {
+      "name": "shipping",
+      "replicas": 2,
+      "readyReplicas": 2,
+      "paused": false,
+      "desiredGeneration": 1,
+      "appliedGeneration": 1,
+      "health": "up",
+      "knobs": {}
+    },
+    {
+      "name": "notification",
+      "replicas": 1,
+      "readyReplicas": 1,
+      "paused": false,
+      "desiredGeneration": 1,
+      "appliedGeneration": 1,
+      "health": "up",
+      "knobs": {}
+    },
+    {
+      "name": "analytics",
+      "replicas": 1,
+      "readyReplicas": 1,
+      "paused": false,
+      "desiredGeneration": 1,
+      "appliedGeneration": 1,
+      "health": "up",
+      "knobs": {}
+    }
+  ],
+  "brokers": [
+    {
+      "id": 0,
+      "up": true,
+      "isController": true,
+      "leaderCount": 17,
+      "underReplicated": 0
+    },
+    {
+      "id": 1,
+      "up": true,
+      "isController": false,
+      "leaderCount": 17,
+      "underReplicated": 0
+    },
+    {
+      "id": 2,
+      "up": true,
+      "isController": false,
+      "leaderCount": 16,
+      "underReplicated": 0
+    }
+  ],
+  "kpis": {
+    "ordersPerSec": 48.2,
+    "revenuePerMin": 1412571,
+    "paymentSuccessRate": 0.95,
+    "reservationSuccessRate": 0.97,
+    "e2eP95Ms": 42485,
+    "inFlight": 8907,
+    "dlqPerMin": 0,
+    "totalLag": 87852
+  },
+  "experiments": [
+    {
+      "id": "exp-0002",
+      "scenario": "broker-crash",
+      "name": "Broker Crash",
+      "status": "recovering",
+      "params": {
+        "broker": 1
+      },
+      "createdAt": "2026-01-15T10:01:22.000Z",
+      "startsAt": "2026-01-15T10:01:22.000Z",
+      "endsAt": "2026-01-15T10:01:47.000Z",
+      "autoRecover": true,
+      "affected": [
+        "broker-1"
+      ],
+      "observations": [
+        {
+          "label": "Broker 1 stopped",
+          "requested": "broker down",
+          "observed": "broker still up",
+          "confirmed": true,
+          "at": "2026-01-15T10:01:23.000Z"
+        },
+        {
+          "label": "Under-replicated partitions",
+          "requested": "> 0",
+          "observed": "0",
+          "confirmed": true,
+          "at": "2026-01-15T10:01:23.000Z"
+        }
+      ],
+      "endedAt": "2026-01-15T10:01:47.000Z"
+    },
+    {
+      "id": "exp-0001",
+      "scenario": "black-friday",
+      "name": "Black Friday",
+      "status": "recovering",
+      "params": {
+        "ordersPerSecond": 1000,
+        "paymentLatencyMs": 150,
+        "inventoryLatencyMs": 100,
+        "randomize": false
+      },
+      "createdAt": "2026-01-15T10:00:32.000Z",
+      "startsAt": "2026-01-15T10:00:32.000Z",
+      "endsAt": "2026-01-15T10:01:07.000Z",
+      "autoRecover": true,
+      "affected": [
+        "order-generator",
+        "payment",
+        "inventory"
+      ],
+      "observations": [
+        {
+          "label": "Order rate",
+          "requested": "50 orders/s",
+          "observed": "48 orders/s",
+          "confirmed": true,
+          "at": "2026-01-15T10:00:32.000Z"
+        },
+        {
+          "label": "payment consumer lag",
+          "requested": "grows",
+          "observed": "7,746 records",
+          "confirmed": true,
+          "at": "2026-01-15T10:00:34.000Z"
+        }
+      ],
+      "endedAt": "2026-01-15T10:01:07.000Z"
+    }
+  ],
+  "alerts": [
+    {
+      "fingerprint": "676225861caf8a22",
+      "name": "KafkaUnderReplicatedPartitions",
+      "status": "resolved",
+      "severity": "warning",
+      "component": "kafka",
+      "summary": "50 partitions are under-replicated",
+      "description": "Some partitions have fewer in-sync replicas than configured.",
+      "startsAt": "2026-01-15T10:01:33.000Z",
+      "labels": {
+        "alertname": "KafkaUnderReplicatedPartitions",
+        "severity": "warning",
+        "component": "kafka",
+        "dashboard": "kafka-overview",
+        "kafka_cluster": "kafka-lab"
+      },
+      "dashboardUrl": "http://grafana.localhost:8080/d/kafka-overview",
+      "runbookUrl": "https://github.com/kafka-lab/runbooks/blob/main/KafkaUnderReplicatedPartitions.md",
+      "generatorUrl": "http://vmalert.localhost:8080/vmalert/alert?group_id=lab&alert_id=676225861caf8a22",
+      "endsAt": "2026-01-15T10:01:56.000Z"
+    },
+    {
+      "fingerprint": "17041fba8f084c0e",
+      "name": "KafkaBrokerDown",
+      "status": "resolved",
+      "severity": "critical",
+      "component": "kafka",
+      "summary": "Kafka broker 1 is down",
+      "description": "A broker stopped reporting. Partitions led by it moved; replicas are out of sync.",
+      "startsAt": "2026-01-15T10:01:28.000Z",
+      "labels": {
+        "alertname": "KafkaBrokerDown",
+        "severity": "critical",
+        "component": "kafka",
+        "dashboard": "kafka-broker",
+        "kafka_broker": "1",
+        "kafka_cluster": "kafka-lab"
+      },
+      "dashboardUrl": "http://grafana.localhost:8080/d/kafka-broker",
+      "runbookUrl": "https://github.com/kafka-lab/runbooks/blob/main/KafkaBrokerDown.md",
+      "generatorUrl": "http://vmalert.localhost:8080/vmalert/alert?group_id=lab&alert_id=17041fba8f084c0e",
+      "endsAt": "2026-01-15T10:01:48.000Z"
+    },
+    {
+      "fingerprint": "f5293ce68346ea7e",
+      "name": "ChaosExperimentActive",
+      "status": "resolved",
+      "severity": "info",
+      "component": "chaos",
+      "summary": "1 chaos experiment(s) running",
+      "description": "Expected degradation — an experiment is active.",
+      "startsAt": "2026-01-15T10:01:23.000Z",
+      "labels": {
+        "alertname": "ChaosExperimentActive",
+        "severity": "info",
+        "component": "chaos",
+        "dashboard": "lab-chaos"
+      },
+      "dashboardUrl": "http://grafana.localhost:8080/d/lab-chaos",
+      "runbookUrl": "https://github.com/kafka-lab/runbooks/blob/main/ChaosExperimentActive.md",
+      "generatorUrl": "http://vmalert.localhost:8080/vmalert/alert?group_id=lab&alert_id=f5293ce68346ea7e",
+      "endsAt": "2026-01-15T10:01:48.000Z"
+    },
+    {
+      "fingerprint": "71392bbe1409dd96",
+      "name": "EndToEndLatencyHigh",
+      "status": "firing",
+      "severity": "warning",
+      "component": "business",
+      "summary": "Order e2e p95 is 42.5 s",
+      "description": "Orders take much longer from creation to shipment.",
+      "startsAt": "2026-01-15T10:00:49.000Z",
+      "labels": {
+        "alertname": "EndToEndLatencyHigh",
+        "severity": "warning",
+        "component": "business",
+        "dashboard": "kafka-e2e"
+      },
+      "dashboardUrl": "http://grafana.localhost:8080/d/kafka-e2e",
+      "runbookUrl": "https://github.com/kafka-lab/runbooks/blob/main/EndToEndLatencyHigh.md",
+      "generatorUrl": "http://vmalert.localhost:8080/vmalert/alert?group_id=lab&alert_id=71392bbe1409dd96"
+    },
+    {
+      "fingerprint": "1d0b49fa02551f4e",
+      "name": "KafkaConsumerLagHigh",
+      "status": "firing",
+      "severity": "warning",
+      "component": "consumer",
+      "summary": "Consumer group analytics lags 34,554 records",
+      "description": "The group consumes slower than records arrive.",
+      "startsAt": "2026-01-15T10:00:47.000Z",
+      "labels": {
+        "alertname": "KafkaConsumerLagHigh",
+        "severity": "warning",
+        "component": "consumer",
+        "dashboard": "kafka-lag",
+        "consumergroup": "analytics"
+      },
+      "dashboardUrl": "http://grafana.localhost:8080/d/kafka-lag",
+      "runbookUrl": "https://github.com/kafka-lab/runbooks/blob/main/KafkaConsumerLagHigh.md",
+      "generatorUrl": "http://vmalert.localhost:8080/vmalert/alert?group_id=lab&alert_id=1d0b49fa02551f4e"
+    },
+    {
+      "fingerprint": "fed9f1847a9f3020",
+      "name": "KafkaConsumerLagHigh",
+      "status": "firing",
+      "severity": "warning",
+      "component": "consumer",
+      "summary": "Consumer group payment lags 7,746 records",
+      "description": "The group consumes slower than records arrive.",
+      "startsAt": "2026-01-15T10:00:46.000Z",
+      "labels": {
+        "alertname": "KafkaConsumerLagHigh",
+        "severity": "warning",
+        "component": "consumer",
+        "dashboard": "kafka-lag",
+        "consumergroup": "payment"
+      },
+      "dashboardUrl": "http://grafana.localhost:8080/d/kafka-lag",
+      "runbookUrl": "https://github.com/kafka-lab/runbooks/blob/main/KafkaConsumerLagHigh.md",
+      "generatorUrl": "http://vmalert.localhost:8080/vmalert/alert?group_id=lab&alert_id=fed9f1847a9f3020"
+    },
+    {
+      "fingerprint": "ac3702966f5a4f82",
+      "name": "KafkaConsumerLagHigh",
+      "status": "firing",
+      "severity": "warning",
+      "component": "consumer",
+      "summary": "Consumer group inventory lags 9,953 records",
+      "description": "The group consumes slower than records arrive.",
+      "startsAt": "2026-01-15T10:00:46.000Z",
+      "labels": {
+        "alertname": "KafkaConsumerLagHigh",
+        "severity": "warning",
+        "component": "consumer",
+        "dashboard": "kafka-lag",
+        "consumergroup": "inventory"
+      },
+      "dashboardUrl": "http://grafana.localhost:8080/d/kafka-lag",
+      "runbookUrl": "https://github.com/kafka-lab/runbooks/blob/main/KafkaConsumerLagHigh.md",
+      "generatorUrl": "http://vmalert.localhost:8080/vmalert/alert?group_id=lab&alert_id=ac3702966f5a4f82"
+    },
+    {
+      "fingerprint": "a2ccb7bb64da916b",
+      "name": "KafkaConsumerLagHigh",
+      "status": "firing",
+      "severity": "warning",
+      "component": "consumer",
+      "summary": "Consumer group notification lags 35,600 records",
+      "description": "The group consumes slower than records arrive.",
+      "startsAt": "2026-01-15T10:00:46.000Z",
+      "labels": {
+        "alertname": "KafkaConsumerLagHigh",
+        "severity": "warning",
+        "component": "consumer",
+        "dashboard": "kafka-lag",
+        "consumergroup": "notification"
+      },
+      "dashboardUrl": "http://grafana.localhost:8080/d/kafka-lag",
+      "runbookUrl": "https://github.com/kafka-lab/runbooks/blob/main/KafkaConsumerLagHigh.md",
+      "generatorUrl": "http://vmalert.localhost:8080/vmalert/alert?group_id=lab&alert_id=a2ccb7bb64da916b"
+    },
+    {
+      "fingerprint": "a4b454369b59654e",
+      "name": "LabTestAlert",
+      "status": "resolved",
+      "severity": "info",
+      "component": "platform",
+      "summary": "Test alert from the controlboard",
+      "description": "Proves the path vmalert → Alertmanager → controlboard webhook works.",
+      "startsAt": "2026-01-15T10:00:27.000Z",
+      "labels": {
+        "alertname": "LabTestAlert",
+        "severity": "info",
+        "component": "platform",
+        "dashboard": "lab-monitoring"
+      },
+      "dashboardUrl": "http://grafana.localhost:8080/d/lab-monitoring",
+      "runbookUrl": "https://github.com/kafka-lab/runbooks/blob/main/LabTestAlert.md",
+      "generatorUrl": "http://vmalert.localhost:8080/vmalert/alert?group_id=lab&alert_id=a4b454369b59654e",
+      "endsAt": "2026-01-15T10:01:09.000Z"
+    }
+  ],
+  "links": [
+    {
+      "id": "grafana",
+      "title": "Grafana",
+      "url": "http://grafana.localhost:8080",
+      "description": "Dashboards for Kafka, services and business KPIs",
+      "icon": "gauge",
+      "health": "up"
+    },
+    {
+      "id": "akhq",
+      "title": "AKHQ",
+      "url": "http://akhq.localhost:8080",
+      "description": "Browse topics, consumer groups and messages",
+      "icon": "layers",
+      "health": "up"
+    },
+    {
+      "id": "vmui",
+      "title": "VictoriaMetrics",
+      "url": "http://vm.localhost:8080/vmui",
+      "description": "Ad-hoc MetricsQL queries",
+      "icon": "database",
+      "health": "up"
+    },
+    {
+      "id": "vmagent",
+      "title": "vmagent targets",
+      "url": "http://vmagent.localhost:8080/targets",
+      "description": "Scrape targets and their health",
+      "icon": "radar",
+      "health": "up"
+    },
+    {
+      "id": "vmalert",
+      "title": "vmalert",
+      "url": "http://vmalert.localhost:8080",
+      "description": "Alerting and recording rules",
+      "icon": "bell-ring",
+      "health": "up"
+    },
+    {
+      "id": "alertmanager",
+      "title": "Alertmanager",
+      "url": "http://alertmanager.localhost:8080",
+      "description": "Silences, routing and notifications",
+      "icon": "siren",
+      "health": "up"
+    },
+    {
+      "id": "logs",
+      "title": "VictoriaLogs",
+      "url": "http://logs.localhost:8080/select/vmui",
+      "description": "Structured logs of every pod",
+      "icon": "scroll-text",
+      "health": "up"
+    },
+    {
+      "id": "traces",
+      "title": "VictoriaTraces",
+      "url": "http://traces.localhost:8080",
+      "description": "Distributed traces (Jaeger UI API)",
+      "icon": "waypoints",
+      "health": "degraded"
+    }
+  ]
+}

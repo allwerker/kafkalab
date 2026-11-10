@@ -1,0 +1,5 @@
+apiVersion: v2
+name: lab-scrapes
+description: Scrape objects for the Kafka Lab — the portable Strimzi bundle scrape plus lab-specific VMPodScrapes
+type: application
+version: 0.1.0

@@ -54,7 +54,7 @@ Arrival order of inputs is arbitrary (different topics, different partition coun
 **shipping** — per order: `payment ∈ {unknown, ok, failed}`, `stock ∈ {unknown, ok, failed}`, `status`
 - `status=open` until both are known or the deadline (default 300 s after first sight) passes.
 - ok+ok → `shipped` (or `ready` while the warehouseOutage knob is on; a sweeper ships later).
-- any failed → `cancelled` with reason `PAYMENT_FAILED` / `OUT_OF_STOCK` / `BOTH_FAILED`,
+- any failed → `cancelled` immediately with reason `PAYMENT_FAILED` / `OUT_OF_STOCK` (`BOTH_FAILED` only if both failures are already known at that moment),
   `refundRequired = payment==ok`, `releaseRequired = stock==ok`.
 - deadline → `cancelled` `DEADLINE_EXCEEDED`, flags = what is known to be ok.
 - After a terminal status every further input is a no-op.

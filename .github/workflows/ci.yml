@@ -1,0 +1,36 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4          # avro-tools (schema generation check)
+        with: { distribution: temurin, java-version: "21" }
+      - uses: oven-sh/setup-bun@v2           # controlboard frontend
+        with: { bun-version: "1.4.4" }
+      - name: Cache pinned toolchain
+        uses: actions/cache@v4
+        with:
+          path: .tools
+          key: tools-${{ hashFiles('tools/versions.env', 'tools/bootstrap*.sh') }}
+      - name: Bootstrap toolchain
+        run: make bootstrap
+      - name: Generated code is up to date
+        run: make gen-check
+      - name: Lint and test (Go, frontend, dashboards, alerts)
+        run: make ci
+      - name: Render all Kubernetes manifests
+        run: make template
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: |
+            coverage.out
+            controlboard/web/coverage/
