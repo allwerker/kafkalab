@@ -11,3 +11,4 @@ controlboard/backend/web/dist/
 .idea/
 .vscode/
 /.claude/worktrees/
+coverage.out

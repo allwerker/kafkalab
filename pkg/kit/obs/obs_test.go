@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 func Test_shouldAttachTraceIDsToLogLinesWhenTheContextCarriesASpan(t *testing.T) {
@@ -134,7 +134,7 @@ func Test_shouldExportSampledSpansWhenAnEndpointIsConfigured(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 	_ = shutdown(ctx)
-	otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	otel.SetTracerProvider(noop.NewTracerProvider())
 }
 
 func Test_shouldFailStartupWhenTheTraceEndpointIsNotAURL(t *testing.T) {

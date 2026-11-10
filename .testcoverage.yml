@@ -1,0 +1,15 @@
+# Coverage gate (vladopajic/go-test-coverage). Go measures statement coverage only; see
+# docs/coverage-exceptions.md for why that is accepted and what replaces branch coverage.
+profile: coverage.out
+threshold:
+  file: 100
+  package: 100
+  total: 100
+# Blocks excluded with `// coverage-ignore: <reason>` must state a reason.
+force-annotation-comment: true
+exclude:
+  paths:
+    - _gen\.go$                 # generated from schemas/*.avdl
+    - /main\.go$                # wiring only, exercised by the end-to-end tests
+    - ^pkg/kit/testkit # test infrastructure
+    - ^tools/               # developer tooling

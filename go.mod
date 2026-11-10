@@ -6,7 +6,12 @@ require (
 	github.com/VictoriaMetrics/metrics v1.45.0
 	github.com/hamba/avro/v2 v2.31.0
 	github.com/jackc/pgx/v5 v5.12.0
+	github.com/twmb/franz-go v1.22.3
+	github.com/twmb/franz-go/pkg/kadm v1.20.0
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20261109062748-d6ea02a174bc
+	github.com/twmb/franz-go/pkg/kmsg v1.15.1
 	github.com/twmb/franz-go/pkg/sr v1.8.0
+	github.com/twmb/franz-go/plugin/kotel v1.7.1
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.47.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.47.0
@@ -30,11 +35,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
-	github.com/twmb/franz-go v1.22.3 // indirect
-	github.com/twmb/franz-go/pkg/kadm v1.20.0 // indirect
-	github.com/twmb/franz-go/pkg/kfake v0.0.0-20261109062748-d6ea02a174bc // indirect
-	github.com/twmb/franz-go/pkg/kmsg v1.15.1 // indirect
-	github.com/twmb/franz-go/plugin/kotel v1.7.1 // indirect
 	github.com/valyala/fastrand v1.1.0 // indirect
 	github.com/valyala/histogram v1.2.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

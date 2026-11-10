@@ -63,17 +63,21 @@ func New(ctx context.Context, o Options) (*Serde, error) {
 		if !ok {
 			return nil, fmt.Errorf("topic %s has no Avro value type", topic)
 		}
+		var last error
 		for {
 			err := s.register(ctx, o.Registry, contracts.Subject(topic), name)
 			if err == nil {
 				break
+			}
+			if ctx.Err() == nil || last == nil {
+				last = err // keep the root cause, not the final "context canceled"
 			}
 			if o.Log != nil {
 				o.Log.WarnContext(ctx, "schema not available yet", "subject", contracts.Subject(topic), "error", err)
 			}
 			select {
 			case <-ctx.Done():
-				return nil, fmt.Errorf("schema for %s: %w", topic, err)
+				return nil, fmt.Errorf("schema for %s: %w", topic, last)
 			case <-time.After(o.RetryEvery):
 			}
 		}
