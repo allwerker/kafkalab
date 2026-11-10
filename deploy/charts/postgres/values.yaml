@@ -1,0 +1,43 @@
+image: postgres:18.6-alpine
+exporterImage: prometheuscommunity/postgres-exporter:v0.20.1
+database: lab
+storage: 5Gi
+memory: 384Mi
+exporterMemory: 48Mi
+
+# One role + schema per stateful service (role = schema = name). Passwords land in Secret
+# `postgres-credentials` (key = service name, plus `postgres` for the superuser).
+services:
+  - payment
+  - inventory
+  - shipping
+  - notification
+  - analytics
+  - controlboard
+
+# The credentials Secret is rendered into each of these namespaces (the first one is the home namespace
+# whose existing Secret is the source of truth for passwords). Missing namespaces are created.
+secretNamespaces:
+  - data
+  - commerce
+  - control
+
+# postgresql.conf overrides (passed as -c flags), tuned for a 384Mi container.
+config:
+  shared_buffers: 64MB
+  effective_cache_size: 192MB
+  work_mem: 2MB
+  maintenance_work_mem: 32MB
+  max_connections: "120"
+  synchronous_commit: "on"
+  wal_level: replica
+  wal_buffers: 4MB
+  min_wal_size: 64MB
+  max_wal_size: 256MB
+  checkpoint_timeout: 5min
+  checkpoint_completion_target: "0.9"
+  huge_pages: "off"
+  dynamic_shared_memory_type: posix
+  log_min_duration_statement: "500"
+  log_checkpoints: "off"
+  track_io_timing: "on"

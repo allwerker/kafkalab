@@ -1,0 +1,10 @@
+{
+  "name": "payment",
+  "replicas": 3,
+  "readyReplicas": 2,
+  "paused": false,
+  "desiredGeneration": 3,
+  "appliedGeneration": 3,
+  "health": "degraded",
+  "knobs": {}
+}

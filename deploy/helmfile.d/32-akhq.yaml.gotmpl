@@ -1,0 +1,71 @@
+# T105: AKHQ (Kafka UI) in namespace kafka, connected to the lab cluster and Karapace.
+repositories:
+  - name: akhq
+    url: https://akhq.io/
+releases:
+  - name: akhq
+    namespace: kafka
+    chart: akhq/akhq
+    version: {{ requiredEnv "AKHQ_VERSION" }}
+    installed: {{ .Values.extras.akhq }}
+    wait: true
+    timeout: 600
+    values:
+      - image:
+          tag: {{ requiredEnv "AKHQ_VERSION" | quote }}
+        podLabels:
+          lab.kafka/tier: platform
+        extraEnv:
+          - name: JAVA_OPTS
+            value: "-Xms256m -Xmx256m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=48m -Xss512k"
+        resources:
+          requests: { memory: 448Mi, cpu: 50m }
+          limits: { memory: 448Mi }
+        readinessProbe:
+          initialDelaySeconds: 15
+        livenessProbe:
+          initialDelaySeconds: 60
+          failureThreshold: 6
+        configuration:
+          micronaut:
+            server:
+              cors:
+                enabled: false
+          akhq:
+            server:
+              access-log:
+                enabled: false
+            # Internal topics are hidden by the HIDE_INTERNAL default view below:
+            # Kafka internals (__consumer_offsets, __share...), _schemas and the lab's control-plane topics.
+            topic:
+              internal-regexps:
+                - "^_.*$"
+                - "^platform\\..*$"
+                - "^.*connect-config$"
+                - "^.*connect-offsets$"
+                - "^.*connect-status$"
+            ui-options:
+              topic:
+                default-view: HIDE_INTERNAL
+                show-all-consumer-groups: true
+              topic-data:
+                sort: NEWEST
+            connections:
+              kafka-lab:
+                properties:
+                  bootstrap.servers: kafka-lab-kafka-bootstrap.kafka:9092
+                schema-registry:
+                  url: http://schema-registry.data:8081
+                  type: confluent
+                ui-options:
+                  topic:
+                    default-view: HIDE_INTERNAL
+                    show-all-consumer-groups: true
+                  topic-data:
+                    sort: NEWEST
+        ingress:
+          enabled: true
+          ingressClassName: traefik
+          pathType: Prefix
+          paths: [/]
+          hosts: [akhq.localhost]

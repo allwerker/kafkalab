@@ -1,0 +1,74 @@
+# Kafka monitoring bundle — scrape objects for VictoriaMetrics operator (VMPodScrape).
+# Portable: selects Strimzi pods in any namespace by Strimzi's own labels and derives the bundle label
+# contract from them:
+#   kafka_cluster = Strimzi cluster name (label strimzi.io/cluster)
+#   kafka_broker  = KRaft node id (numeric suffix of the pod name, <cluster>-<pool>-<id>)
+# Apply into the namespace your VMAgent watches. Prometheus Operator users: strimzi-podmonitor.yaml.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: strimzi-kafka
+  labels:
+    app.kubernetes.io/part-of: kafka-monitoring-bundle
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      strimzi.io/kind: Kafka
+    matchExpressions:
+      - { key: strimzi.io/component-type, operator: In, values: [kafka] }
+  podMetricsEndpoints:
+    - port: tcp-prometheus
+      path: /metrics
+      relabelConfigs:
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+          targetLabel: kafka_cluster
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          regex: '.*-([0-9]+)$'
+          targetLabel: kafka_broker
+          replacement: '$1'
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_pool_name]
+          targetLabel: kafka_pool
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+---
+# Strimzi cluster operator (/metrics on the container port named "http").
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: strimzi-cluster-operator
+  labels:
+    app.kubernetes.io/part-of: kafka-monitoring-bundle
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      strimzi.io/kind: cluster-operator
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+---
+# Strimzi entity operator: topic operator /metrics on its health-check port. If you also run the user
+# operator, add a second endpoint for port `healthcheck-uo` (an endpoint without pods leaves an empty
+# scrape pool, which vmagent alerts on).
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: strimzi-entity-operator
+  labels:
+    app.kubernetes.io/part-of: kafka-monitoring-bundle
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      strimzi.io/kind: Kafka
+      strimzi.io/component-type: entity-operator
+  podMetricsEndpoints:
+    - port: healthcheck-to
+      path: /metrics
+      relabelConfigs:
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+          targetLabel: kafka_cluster

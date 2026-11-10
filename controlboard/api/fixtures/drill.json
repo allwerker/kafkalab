@@ -1,0 +1,38 @@
+{
+  "id": "drill-001",
+  "status": "running",
+  "difficulty": "medium",
+  "startedAt": "2026-01-15T10:02:20.000Z",
+  "hintsUsed": 2,
+  "hints": [
+    "Compare partitions, not groups.",
+    "One partition carries most traffic."
+  ],
+  "guesses": [],
+  "candidates": [
+    {
+      "id": "payment-provider-down",
+      "name": "Payment Provider Down"
+    },
+    {
+      "id": "hot-partition",
+      "name": "Hot Partition"
+    },
+    {
+      "id": "notification-meltdown",
+      "name": "Notification Meltdown"
+    },
+    {
+      "id": "flash-sale",
+      "name": "Flash Sale"
+    },
+    {
+      "id": "database-slowdown",
+      "name": "Database Slowdown"
+    },
+    {
+      "id": "fat-messages",
+      "name": "Fat Messages"
+    }
+  ]
+}

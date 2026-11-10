@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    {{- include "postgres.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "postgres.selector" . | nindent 4 }}
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-headless
+  labels:
+    {{- include "postgres.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "postgres.selector" . | nindent 4 }}
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    {{- include "postgres.labels" . | nindent 4 }}
+spec:
+  serviceName: postgres-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "postgres.selector" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "postgres.labels" . | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        fsGroup: 70
+      containers:
+        - name: postgres
+          image: {{ .Values.image }}
+          args:
+            {{- range $k, $v := .Values.config }}
+            - -c
+            - {{ printf "%s=%v" $k $v | quote }}
+            {{- end }}
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.database }}
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: postgres-credentials, key: postgres }
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, postgres, -d, {{ .Values.database }}, -h, 127.0.0.1]
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command: [pg_isready, -U, postgres, -h, 127.0.0.1]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { memory: {{ .Values.memory }}, cpu: 50m }
+            limits: { memory: {{ .Values.memory }} }
+          volumeMounts:
+            # PostgreSQL 18 images keep PGDATA in a versioned subdirectory of /var/lib/postgresql.
+            - name: data
+              mountPath: /var/lib/postgresql
+        - name: exporter
+          image: {{ .Values.exporterImage }}
+          args:
+            - --log.level=warn
+          env:
+            - name: DATA_SOURCE_URI
+              value: 127.0.0.1:5432/{{ .Values.database }}?sslmode=disable
+            - name: DATA_SOURCE_USER
+              value: postgres
+            - name: DATA_SOURCE_PASS
+              valueFrom:
+                secretKeyRef: { name: postgres-credentials, key: postgres }
+          ports:
+            - name: metrics
+              containerPort: 9187
+          readinessProbe:
+            httpGet: { path: /metrics, port: metrics }
+            periodSeconds: 15
+            timeoutSeconds: 5
+          resources:
+            requests: { memory: {{ .Values.exporterMemory }}, cpu: 10m }
+            limits: { memory: {{ .Values.exporterMemory }} }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: {{ .Values.storage }}

@@ -1,0 +1,827 @@
+[
+  {
+    "id": "black-friday",
+    "name": "Black Friday",
+    "description": "Orders jump from 50/s to 1,000/s. Watch throughput spike and consumer lag build up behind the slowest service.",
+    "category": "traffic",
+    "severity": "high",
+    "destructive": false,
+    "defaultDurationSec": 180,
+    "params": [
+      {
+        "key": "ordersPerSecond",
+        "label": "Orders per second",
+        "type": "number",
+        "min": 100,
+        "max": 2000,
+        "step": 50,
+        "default": 1000,
+        "unit": "orders/s"
+      },
+      {
+        "key": "paymentLatencyMs",
+        "label": "Payment latency",
+        "type": "number",
+        "min": 0,
+        "max": 1000,
+        "step": 10,
+        "default": 150,
+        "unit": "ms"
+      },
+      {
+        "key": "inventoryLatencyMs",
+        "label": "Inventory latency",
+        "type": "number",
+        "min": 0,
+        "max": 1000,
+        "step": 10,
+        "default": 100,
+        "unit": "ms"
+      },
+      {
+        "key": "randomize",
+        "label": "Randomize bursts",
+        "type": "boolean",
+        "default": false
+      }
+    ],
+    "expectedSymptoms": [
+      "orders/s ×20",
+      "consumer lag grows on payment and inventory",
+      "e2e p95 latency rises"
+    ],
+    "dashboards": [
+      {
+        "title": "Business KPIs",
+        "url": "http://grafana.localhost:8080/d/lab-business"
+      },
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      }
+    ]
+  },
+  {
+    "id": "flash-sale",
+    "name": "Flash Sale",
+    "description": "Sudden demand for one popular SKU. Inventory rows contend for the same lock and stock runs out.",
+    "category": "traffic",
+    "severity": "medium",
+    "destructive": false,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "sku",
+        "label": "Popular SKU",
+        "type": "select",
+        "options": [
+          "SKU-1337",
+          "SKU-0042",
+          "SKU-0815"
+        ],
+        "default": "SKU-1337"
+      },
+      {
+        "key": "probability",
+        "label": "Share of orders",
+        "type": "number",
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05,
+        "default": 0.7
+      },
+      {
+        "key": "ordersPerSecond",
+        "label": "Orders per second",
+        "type": "number",
+        "min": 50,
+        "max": 1000,
+        "step": 50,
+        "default": 200,
+        "unit": "orders/s"
+      }
+    ],
+    "expectedSymptoms": [
+      "reservation success rate drops",
+      "inventory.rejected spikes",
+      "cancellations and refunds"
+    ],
+    "dashboards": [
+      {
+        "title": "Business KPIs",
+        "url": "http://grafana.localhost:8080/d/lab-business"
+      },
+      {
+        "title": "PostgreSQL",
+        "url": "http://grafana.localhost:8080/d/lab-postgres"
+      }
+    ]
+  },
+  {
+    "id": "traffic-tsunami",
+    "name": "Traffic Tsunami",
+    "description": "Traffic ramps up gradually until it exceeds what the consumers can process. Backlog grows without bound.",
+    "category": "traffic",
+    "severity": "high",
+    "destructive": false,
+    "defaultDurationSec": 240,
+    "params": [
+      {
+        "key": "peakOrdersPerSecond",
+        "label": "Peak orders per second",
+        "type": "number",
+        "min": 200,
+        "max": 3000,
+        "step": 100,
+        "default": 1500,
+        "unit": "orders/s"
+      }
+    ],
+    "expectedSymptoms": [
+      "sustained lag growth on every group",
+      "e2e latency climbs minute by minute"
+    ],
+    "dashboards": [
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      },
+      {
+        "title": "End-to-End Latency",
+        "url": "http://grafana.localhost:8080/d/kafka-e2e"
+      }
+    ]
+  },
+  {
+    "id": "hot-partition",
+    "name": "Hot Partition",
+    "description": "Most order ids hash onto one partition. One consumer instance drowns while the others idle.",
+    "category": "traffic",
+    "severity": "medium",
+    "destructive": false,
+    "defaultDurationSec": 150,
+    "params": [
+      {
+        "key": "partition",
+        "label": "Hot partition",
+        "type": "number",
+        "min": 0,
+        "max": 5,
+        "step": 1,
+        "default": 0
+      },
+      {
+        "key": "ratio",
+        "label": "Share of traffic",
+        "type": "number",
+        "min": 0.2,
+        "max": 1,
+        "step": 0.05,
+        "default": 0.6
+      }
+    ],
+    "expectedSymptoms": [
+      "lag on a single partition",
+      "uneven partition throughput"
+    ],
+    "dashboards": [
+      {
+        "title": "Topics",
+        "url": "http://grafana.localhost:8080/d/kafka-topics"
+      },
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      }
+    ]
+  },
+  {
+    "id": "fat-messages",
+    "name": "Fat Messages",
+    "description": "Every order carries a big payload. Network and disk throughput explode, fetches slow down.",
+    "category": "traffic",
+    "severity": "medium",
+    "destructive": false,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "paddingBytes",
+        "label": "Padding per order",
+        "type": "number",
+        "min": 1000,
+        "max": 500000,
+        "step": 1000,
+        "default": 50000,
+        "unit": "bytes"
+      }
+    ],
+    "expectedSymptoms": [
+      "broker bytes-in ×50",
+      "fetch latency up",
+      "moderate lag"
+    ],
+    "dashboards": [
+      {
+        "title": "Brokers",
+        "url": "http://grafana.localhost:8080/d/kafka-broker"
+      },
+      {
+        "title": "Footprint",
+        "url": "http://grafana.localhost:8080/d/lab-footprint"
+      }
+    ]
+  },
+  {
+    "id": "payment-provider-down",
+    "name": "Payment Provider Down",
+    "description": "The payment provider returns errors. Every authorisation fails and orders get cancelled.",
+    "category": "service",
+    "severity": "high",
+    "destructive": false,
+    "defaultDurationSec": 90,
+    "params": [],
+    "expectedSymptoms": [
+      "payment success rate → 0%",
+      "payments.failed spikes",
+      "revenue/min drops"
+    ],
+    "dashboards": [
+      {
+        "title": "Business KPIs",
+        "url": "http://grafana.localhost:8080/d/lab-business"
+      }
+    ]
+  },
+  {
+    "id": "warehouse-overload",
+    "name": "Warehouse Overload",
+    "description": "Inventory processing becomes ten times slower.",
+    "category": "service",
+    "severity": "medium",
+    "destructive": false,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "factor",
+        "label": "Slowdown factor",
+        "type": "number",
+        "min": 2,
+        "max": 50,
+        "step": 1,
+        "default": 10,
+        "unit": "×"
+      }
+    ],
+    "expectedSymptoms": [
+      "inventory consumer lag",
+      "shipping waits for reservations"
+    ],
+    "dashboards": [
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      },
+      {
+        "title": "Services",
+        "url": "http://grafana.localhost:8080/d/lab-services"
+      }
+    ]
+  },
+  {
+    "id": "notification-meltdown",
+    "name": "Notification Meltdown",
+    "description": "Notification slows to about one event per second. Lag rises fast, the business keeps running.",
+    "category": "service",
+    "severity": "low",
+    "destructive": false,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "eventsPerSecond",
+        "label": "Events per second",
+        "type": "number",
+        "min": 1,
+        "max": 50,
+        "step": 1,
+        "default": 1,
+        "unit": "events/s"
+      }
+    ],
+    "expectedSymptoms": [
+      "notification lag rises rapidly",
+      "no revenue impact"
+    ],
+    "dashboards": [
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      }
+    ]
+  },
+  {
+    "id": "silent-failure",
+    "name": "Silent Failure",
+    "description": "A service stops making progress without crashing. Pods look healthy, lag tells the truth.",
+    "category": "service",
+    "severity": "high",
+    "destructive": false,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "service",
+        "label": "Target service",
+        "type": "service",
+        "options": [
+          "payment",
+          "inventory",
+          "shipping",
+          "notification",
+          "analytics"
+        ],
+        "default": "shipping"
+      }
+    ],
+    "expectedSymptoms": [
+      "lag grows while health stays green",
+      "no consumption on the group"
+    ],
+    "dashboards": [
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      },
+      {
+        "title": "Services",
+        "url": "http://grafana.localhost:8080/d/lab-services"
+      }
+    ]
+  },
+  {
+    "id": "database-slowdown",
+    "name": "Database Slowdown",
+    "description": "Every PostgreSQL transaction takes longer. End-to-end latency rises across the board.",
+    "category": "service",
+    "severity": "medium",
+    "destructive": false,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "dbLatencyMs",
+        "label": "Extra DB latency",
+        "type": "number",
+        "min": 10,
+        "max": 1000,
+        "step": 10,
+        "default": 80,
+        "unit": "ms"
+      }
+    ],
+    "expectedSymptoms": [
+      "e2e p95 latency up",
+      "processing time per batch up",
+      "some lag"
+    ],
+    "dashboards": [
+      {
+        "title": "PostgreSQL",
+        "url": "http://grafana.localhost:8080/d/lab-postgres"
+      },
+      {
+        "title": "End-to-End Latency",
+        "url": "http://grafana.localhost:8080/d/kafka-e2e"
+      }
+    ]
+  },
+  {
+    "id": "recovery-storm",
+    "name": "Recovery Storm",
+    "description": "Payment, inventory and shipping pause, then resume at once and hammer the brokers while catching up.",
+    "category": "service",
+    "severity": "medium",
+    "destructive": false,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "pauseShare",
+        "label": "Paused share of duration",
+        "type": "number",
+        "min": 0.2,
+        "max": 0.9,
+        "step": 0.05,
+        "default": 0.6
+      }
+    ],
+    "expectedSymptoms": [
+      "lag builds on three groups",
+      "catch-up throughput spike on resume"
+    ],
+    "dashboards": [
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      },
+      {
+        "title": "Brokers",
+        "url": "http://grafana.localhost:8080/d/kafka-broker"
+      }
+    ]
+  },
+  {
+    "id": "consumer-crash-loop",
+    "name": "Consumer Crash Loop",
+    "description": "A consumer keeps restarting. Every restart triggers a rebalance and a lag sawtooth.",
+    "category": "kubernetes",
+    "severity": "medium",
+    "destructive": false,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "service",
+        "label": "Target service",
+        "type": "service",
+        "options": [
+          "payment",
+          "inventory",
+          "shipping",
+          "notification",
+          "analytics"
+        ],
+        "default": "inventory"
+      },
+      {
+        "key": "intervalSec",
+        "label": "Restart interval",
+        "type": "number",
+        "min": 5,
+        "max": 60,
+        "step": 1,
+        "default": 12,
+        "unit": "s"
+      }
+    ],
+    "expectedSymptoms": [
+      "rebalances",
+      "lag sawtooth",
+      "pod restarts in Kubernetes"
+    ],
+    "dashboards": [
+      {
+        "title": "Pods",
+        "url": "http://grafana.localhost:8080/d/kafka-pods"
+      },
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      }
+    ]
+  },
+  {
+    "id": "regional-outage",
+    "name": "Regional Outage",
+    "description": "A whole group of services disappears at once, then comes back.",
+    "category": "kubernetes",
+    "severity": "critical",
+    "destructive": true,
+    "defaultDurationSec": 90,
+    "params": [
+      {
+        "key": "region",
+        "label": "Region",
+        "type": "select",
+        "options": [
+          "region-a (payment, inventory)",
+          "region-b (shipping, notification)"
+        ],
+        "default": "region-a (payment, inventory)"
+      }
+    ],
+    "expectedSymptoms": [
+      "several services down",
+      "lag on all their groups",
+      "orders stall"
+    ],
+    "dashboards": [
+      {
+        "title": "Services",
+        "url": "http://grafana.localhost:8080/d/lab-services"
+      },
+      {
+        "title": "Lab Home",
+        "url": "http://grafana.localhost:8080/d/lab-home"
+      }
+    ]
+  },
+  {
+    "id": "rebalance-storm",
+    "name": "Rebalance Storm",
+    "description": "Members keep joining and leaving the group. Consumption stops during every rebalance.",
+    "category": "kubernetes",
+    "severity": "medium",
+    "destructive": false,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "service",
+        "label": "Target service",
+        "type": "service",
+        "options": [
+          "payment",
+          "inventory",
+          "shipping",
+          "notification",
+          "analytics"
+        ],
+        "default": "payment"
+      },
+      {
+        "key": "everySec",
+        "label": "Rebalance every",
+        "type": "number",
+        "min": 3,
+        "max": 30,
+        "step": 1,
+        "default": 8,
+        "unit": "s"
+      }
+    ],
+    "expectedSymptoms": [
+      "rebalance rate up",
+      "throughput gaps",
+      "lag saw"
+    ],
+    "dashboards": [
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      }
+    ]
+  },
+  {
+    "id": "kafka-broker-failure",
+    "name": "Kafka Broker Failure",
+    "description": "Gracefully stop one Kafka broker. Leaders move, replicas fall out of sync, clients reconnect.",
+    "category": "broker",
+    "severity": "high",
+    "destructive": true,
+    "defaultDurationSec": 90,
+    "params": [
+      {
+        "key": "broker",
+        "label": "Broker",
+        "type": "broker",
+        "options": [
+          "0",
+          "1",
+          "2"
+        ],
+        "default": 1
+      }
+    ],
+    "expectedSymptoms": [
+      "leader elections",
+      "under-replicated partitions",
+      "short produce latency spike"
+    ],
+    "dashboards": [
+      {
+        "title": "Brokers",
+        "url": "http://grafana.localhost:8080/d/kafka-broker"
+      },
+      {
+        "title": "KRaft Controller",
+        "url": "http://grafana.localhost:8080/d/kafka-kraft"
+      }
+    ]
+  },
+  {
+    "id": "broker-crash",
+    "name": "Broker Crash",
+    "description": "Kill one broker hard (no controlled shutdown). Clients notice only after timeouts.",
+    "category": "broker",
+    "severity": "critical",
+    "destructive": true,
+    "defaultDurationSec": 60,
+    "params": [
+      {
+        "key": "broker",
+        "label": "Broker",
+        "type": "broker",
+        "options": [
+          "0",
+          "1",
+          "2"
+        ],
+        "default": 1
+      }
+    ],
+    "expectedSymptoms": [
+      "request timeouts",
+      "unclean leader movement",
+      "under-replicated partitions"
+    ],
+    "dashboards": [
+      {
+        "title": "Brokers",
+        "url": "http://grafana.localhost:8080/d/kafka-broker"
+      },
+      {
+        "title": "Kafka Overview",
+        "url": "http://grafana.localhost:8080/d/kafka-overview"
+      }
+    ]
+  },
+  {
+    "id": "broker-rolling-restart",
+    "name": "Broker Rolling Restart",
+    "description": "Restart the brokers one after another, like an upgrade. The cluster should stay available.",
+    "category": "broker",
+    "severity": "medium",
+    "destructive": true,
+    "defaultDurationSec": 90,
+    "params": [
+      {
+        "key": "pauseSec",
+        "label": "Down time per broker",
+        "type": "number",
+        "min": 5,
+        "max": 60,
+        "step": 5,
+        "default": 20,
+        "unit": "s"
+      }
+    ],
+    "expectedSymptoms": [
+      "three waves of leader elections",
+      "URP spikes",
+      "no lost orders"
+    ],
+    "dashboards": [
+      {
+        "title": "Brokers",
+        "url": "http://grafana.localhost:8080/d/kafka-broker"
+      },
+      {
+        "title": "KRaft Controller",
+        "url": "http://grafana.localhost:8080/d/kafka-kraft"
+      }
+    ]
+  },
+  {
+    "id": "broker-outage",
+    "name": "Broker Outage",
+    "description": "Two of three brokers go away. min.insync.replicas can no longer be met and producers stall.",
+    "category": "broker",
+    "severity": "critical",
+    "destructive": true,
+    "defaultDurationSec": 60,
+    "params": [
+      {
+        "key": "survivor",
+        "label": "Surviving broker",
+        "type": "broker",
+        "options": [
+          "0",
+          "1",
+          "2"
+        ],
+        "default": 0
+      }
+    ],
+    "expectedSymptoms": [
+      "NotEnoughReplicas errors",
+      "orders/s → 0",
+      "critical alerts"
+    ],
+    "dashboards": [
+      {
+        "title": "Kafka Overview",
+        "url": "http://grafana.localhost:8080/d/kafka-overview"
+      },
+      {
+        "title": "Brokers",
+        "url": "http://grafana.localhost:8080/d/kafka-broker"
+      }
+    ]
+  },
+  {
+    "id": "network-chaos",
+    "name": "Network Chaos",
+    "description": "Inject latency and packet loss on one service's Kafka client.",
+    "category": "network",
+    "severity": "high",
+    "destructive": true,
+    "defaultDurationSec": 120,
+    "params": [
+      {
+        "key": "service",
+        "label": "Target service",
+        "type": "service",
+        "options": [
+          "payment",
+          "inventory",
+          "shipping",
+          "notification",
+          "analytics"
+        ],
+        "default": "payment"
+      },
+      {
+        "key": "latencyMs",
+        "label": "Latency",
+        "type": "number",
+        "min": 10,
+        "max": 2000,
+        "step": 10,
+        "default": 200,
+        "unit": "ms"
+      },
+      {
+        "key": "dropProbability",
+        "label": "Packet loss",
+        "type": "number",
+        "min": 0,
+        "max": 0.9,
+        "step": 0.05,
+        "default": 0.1
+      }
+    ],
+    "expectedSymptoms": [
+      "retries and timeouts",
+      "backlog growth on the target group"
+    ],
+    "dashboards": [
+      {
+        "title": "Services",
+        "url": "http://grafana.localhost:8080/d/lab-services"
+      },
+      {
+        "title": "Consumer Lag",
+        "url": "http://grafana.localhost:8080/d/kafka-lag"
+      }
+    ]
+  },
+  {
+    "id": "poison-message",
+    "name": "Poison Message",
+    "description": "The generator publishes undecodable records. Consumers dead-letter them to orders.dlq.",
+    "category": "data",
+    "severity": "medium",
+    "destructive": false,
+    "defaultDurationSec": 90,
+    "params": [
+      {
+        "key": "probability",
+        "label": "Poison probability",
+        "type": "number",
+        "min": 0.01,
+        "max": 0.5,
+        "step": 0.01,
+        "default": 0.05
+      }
+    ],
+    "expectedSymptoms": [
+      "DLQ rate up",
+      "decode errors in logs"
+    ],
+    "dashboards": [
+      {
+        "title": "Business KPIs",
+        "url": "http://grafana.localhost:8080/d/lab-business"
+      },
+      {
+        "title": "Logs",
+        "url": "http://grafana.localhost:8080/d/lab-logs"
+      }
+    ]
+  },
+  {
+    "id": "duplicate-delivery",
+    "name": "Duplicate Delivery",
+    "description": "Orders are published twice with the same event id. Idempotent consumers must not double-charge.",
+    "category": "data",
+    "severity": "low",
+    "destructive": false,
+    "defaultDurationSec": 90,
+    "params": [
+      {
+        "key": "probability",
+        "label": "Duplicate probability",
+        "type": "number",
+        "min": 0.01,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.2
+      }
+    ],
+    "expectedSymptoms": [
+      "duplicate counter up",
+      "revenue unchanged"
+    ],
+    "dashboards": [
+      {
+        "title": "Business KPIs",
+        "url": "http://grafana.localhost:8080/d/lab-business"
+      }
+    ]
+  }
+]
