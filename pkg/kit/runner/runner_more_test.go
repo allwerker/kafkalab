@@ -34,7 +34,12 @@ func Test_shouldContinueTheOrdersTraceWhenTheIncomingRecordCarriesTraceContext(t
 	}
 	defer producer.Close()
 	var calls atomic.Int64
-	h.start(h.runner(paymentHandler(&calls), func(c *Config) { c.Tracer = tracer; c.Hooks = hooks }))
+	var batchSeen atomic.Bool
+	traced := HandlerFunc(func(ctx context.Context, tx pgx.Tx, in Input) ([]Output, error) {
+		batchSeen.Store(BatchOf(ctx) != nil)
+		return paymentHandler(&calls)(ctx, tx, in)
+	})
+	h.start(h.runner(traced, func(c *Config) { c.Tracer = tracer; c.Hooks = hooks }))
 	ctx, root := tp.Tracer("generator").Start(context.Background(), "create order")
 	b, _ := h.serde.Encode(order("o-traced", 700))
 
@@ -45,7 +50,11 @@ func Test_shouldContinueTheOrdersTraceWhenTheIncomingRecordCarriesTraceContext(t
 	root.End()
 	h.read(contracts.TopicPaymentsCompleted, 1)
 
-	// THEN: processing and the published payment belong to the same trace as the order
+	// THEN: the handler still runs inside the batch scope (stock ledgers, post-commit counters)
+	if !batchSeen.Load() {
+		t.Fatal("tracing must not hide the batch scope from the handler")
+	}
+	// AND: processing and the published payment belong to the same trace as the order
 	h.eventually("process and publish spans", func() bool {
 		var process, publish bool
 		for _, s := range rec.Ended() {

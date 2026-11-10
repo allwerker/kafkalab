@@ -613,9 +613,11 @@ func rebind(outs []outRecord, ctx context.Context) []outRecord {
 func (r *Runner) handle(ctx context.Context, tx pgx.Tx, topic string, it *item) ([]outRecord, error) {
 	pctx := ctx
 	if r.cfg.Tracer != nil {
-		var span trace.Span
-		pctx, span = r.cfg.Tracer.WithProcessSpan(it.rec)
+		// WithProcessSpan returns a context derived from the record, which would drop the batch
+		// scope (and the caller's cancellation). Keep the batch context and attach only the span.
+		_, span := r.cfg.Tracer.WithProcessSpan(it.rec)
 		defer span.End()
+		pctx = trace.ContextWithSpan(ctx, span)
 	}
 	knobs := r.cfg.Control.Knobs()
 	if d := time.Duration(knobs.ProcessingLatencyMs) * time.Millisecond; d > 0 || knobs.ProcessingJitterMs > 0 {
