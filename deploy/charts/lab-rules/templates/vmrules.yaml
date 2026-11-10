@@ -1,0 +1,13 @@
+{{- range $name, $content := .Values.ruleFiles }}
+{{- $file := $content | fromYaml }}
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: {{ $name }}
+  labels:
+    app.kubernetes.io/part-of: kafka-lab-rules
+spec:
+  groups:
+{{ toYaml $file.groups | indent 4 }}
+{{- end }}

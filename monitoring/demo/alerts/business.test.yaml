@@ -1,0 +1,142 @@
+# Unit tests for business.yaml (GENERATED, run: make alerts-test).
+rule_files:
+  - business.yaml
+evaluation_interval: 15s
+tests:
+  - name: LabPaymentFailureRateHigh fires
+    interval: 15s
+    input_series:
+      - series: lab_payments_total{service="analytics",result="completed"}
+        values: 0+10x48
+      - series: lab_payments_total{service="analytics",result="failed"}
+        values: 0+10x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: LabPaymentFailureRateHigh
+        exp_alerts:
+          - exp_labels:
+              component: business
+              dashboard: lab-business
+              severity: warning
+            exp_annotations:
+              description: The share of failed payments is far above the simulated baseline (a few percent). Check the payment service, its database and the failure reasons on the Commerce Business dashboard.
+              runbook_url: docs/runbooks/LabPaymentFailureRateHigh.md
+              summary: More than 25 % of payments fail
+  - name: LabPaymentFailureRateHigh stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: lab_payments_total{service="analytics",result="completed"}
+        values: 0+10x48
+      - series: lab_payments_total{service="analytics",result="failed"}
+        values: 0+0.3x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: LabPaymentFailureRateHigh
+        exp_alerts: []
+  - name: LabOrderCompletionSlow fires
+    interval: 15s
+    input_series:
+      - series: lab_order_completion_seconds_bucket{service="analytics",outcome="shipped",vmrange="4.642e+01...5.000e+01"}
+        values: 0+10x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: LabOrderCompletionSlow
+        exp_alerts:
+          - exp_labels:
+              component: business
+              dashboard: lab-business
+              severity: warning
+            exp_annotations:
+              description: Orders take much longer than usual to be shipped or cancelled. Some step of the pipeline (payment, inventory, shipping) lags — check consumer lag and the Service & Client Runtime dashboard.
+              runbook_url: docs/runbooks/LabOrderCompletionSlow.md
+              summary: 95 % of orders need more than 30 s from creation to completion
+  - name: LabOrderCompletionSlow stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: lab_order_completion_seconds_bucket{service="analytics",outcome="shipped",vmrange="1.000e+00...1.136e+00"}
+        values: 0+10x48
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: LabOrderCompletionSlow
+        exp_alerts: []
+  - name: LabDeadLetterActivity fires
+    interval: 15s
+    input_series:
+      - series: lab_dlq_records_total{service="payment",topic="orders.created",reason="poison"}
+        values: 0+1x44
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: LabDeadLetterActivity
+        exp_alerts:
+          - exp_labels:
+              component: business
+              dashboard: lab-business
+              service: payment
+              severity: info
+              topic: orders.created
+            exp_annotations:
+              description: Records from orders.created could not be processed by payment and went to a dead-letter topic. Expected while the generator sends poison messages; otherwise inspect the DLQ in AKHQ.
+              runbook_url: docs/runbooks/LabDeadLetterActivity.md
+              summary: payment dead-letters records from orders.created
+  - name: LabDeadLetterActivity stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: lab_dlq_records_total{service="payment",topic="orders.created",reason="poison"}
+        values: 3x44
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: LabDeadLetterActivity
+        exp_alerts: []
+  - name: LabRevenueDrop fires
+    interval: 15s
+    input_series:
+      - series: lab_revenue_cents_total{service="analytics",region="eu"}
+        values: 0+1000x260 260000+100x332
+    alert_rule_test:
+      - eval_time: 1h18m
+        alertname: LabRevenueDrop
+        exp_alerts:
+          - exp_labels:
+              component: business
+              dashboard: lab-business
+              severity: warning
+            exp_annotations:
+              description: Shipped order value per minute is less than 50 % of the same window an hour earlier. Something between order creation and shipping is broken or very slow — start at the funnel on the Commerce Business dashboard.
+              runbook_url: docs/runbooks/LabRevenueDrop.md
+              summary: Revenue dropped below half of the value one hour ago
+  - name: LabRevenueDrop stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: lab_revenue_cents_total{service="analytics",region="eu"}
+        values: 0+1000x332
+    alert_rule_test:
+      - eval_time: 1h18m
+        alertname: LabRevenueDrop
+        exp_alerts: []
+  - name: LabNotificationBacklog fires
+    interval: 15s
+    input_series:
+      - series: kminion_kafka_consumer_group_topic_lag{kafka_cluster="kafka-lab",group_id="notification",topic_name="orders.shipped"}
+        values: 5000x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: LabNotificationBacklog
+        exp_alerts:
+          - exp_labels:
+              component: business
+              dashboard: kafka-lag
+              kafka_cluster: kafka-lab
+              severity: warning
+            exp_annotations:
+              description: The notification consumer group lags behind by more than 1000 events on cluster kafka-lab. Orders ship, but customers hear about it late.
+              runbook_url: docs/runbooks/LabNotificationBacklog.md
+              summary: 'Customers are not notified: more than 1000 events wait for the notification service'
+  - name: LabNotificationBacklog stays silent when healthy
+    interval: 15s
+    input_series:
+      - series: kminion_kafka_consumer_group_topic_lag{kafka_cluster="kafka-lab",group_id="notification",topic_name="orders.shipped"}
+        values: 20x28
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: LabNotificationBacklog
+        exp_alerts: []
