@@ -4,6 +4,7 @@ go 1.27
 
 require (
 	github.com/VictoriaMetrics/metrics v1.45.0
+	github.com/coder/websocket v1.8.15
 	github.com/google/uuid v1.6.0
 	github.com/hamba/avro/v2 v2.31.0
 	github.com/jackc/pgx/v5 v5.12.0
