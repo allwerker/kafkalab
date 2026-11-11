@@ -70,6 +70,6 @@ Useful commands
   ./kctl get pods -A     kubectl for this cluster, from any directory
   ./kctl lab status      pods and URLs        ./kctl lab groups   consumer groups
   make footprint         memory per namespace
-  make down              stop (keeps data)    ./start_stack.sh --fast   start again
-  make nuke              delete everything
+  ./stop_stack.sh        stop (keeps data)    ./start_stack.sh --fast   start again
+  ./stop_stack.sh --nuke delete everything
 EOF

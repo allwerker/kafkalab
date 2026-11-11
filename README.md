@@ -22,6 +22,7 @@ Screenshots are rendered from the running stack with `cd controlboard/web && bun
 
 ```bash
 ./start_stack.sh     # everything below in one step, then prints a short tutorial
+./stop_stack.sh      # stop the cluster, keep data (--nuke deletes everything)
 make bootstrap      # pinned toolchain into .tools/ (Go, kubectl, helm, helmfile, k3d) — no sudo
 make up             # k3d cluster + images + every Helm release (≈ 10 min the first time)
 make status         # pods and URLs
