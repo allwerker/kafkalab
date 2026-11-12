@@ -44,6 +44,18 @@ All ports are bound to `127.0.0.1` only. `make down` stops the cluster (data kep
 deletes it, `make reset` rebuilds from scratch. `PROFILE=lite make up` runs a single broker
 without logs/traces (≈ 5 GB RAM).
 
+## Profiles
+
+| Profile | For | Kafka | PostgreSQL |
+|---|---|---|---|
+| `default` | laptop, ≈ 7.5 GB RAM | 3 nodes, 512 MB heap | 384 MiB |
+| `lite` | small laptop, ≈ 5 GB RAM | 1 node | 384 MiB |
+| `hetzner` | one 32 GB / 16 vCPU server (CPX62) behind a TLS proxy | 3 nodes, 2 GB heap, 60 GiB each, tuned threads | 6 GiB, tuned buffers, WAL and autovacuum |
+
+`PROFILE=hetzner make deploy` selects `deploy/values/profiles/hetzner.yaml` plus the per-release
+overrides in `deploy/values/env/hetzner/` (any `deploy/values/env/<profile>/<release>.yaml` is picked
+up when present). The server setup itself (Terraform, Ansible, Caddy) is not part of this repo.
+
 ## Architecture
 
 ```

@@ -1,0 +1,55 @@
+# PostgreSQL for the Hetzner profile: 6 GiB container, local NVMe, up to 6 services x 6 replicas
+# with a pool of 10 connections each (plus controlboard, exporter, bootstrap job).
+memory: 6Gi
+cpu: "1"
+storage: 50Gi
+shmSize: 1Gi
+config:
+  # Memory: 25 % of the container for the buffer pool, the rest is per-backend memory and page cache.
+  shared_buffers: 1536MB
+  effective_cache_size: 4GB
+  work_mem: 16MB
+  maintenance_work_mem: 512MB
+  autovacuum_work_mem: 256MB
+  max_connections: "400"
+  # WAL: big enough that checkpoints are time-driven (every 15 min), not forced by WAL volume.
+  # wal_compression shrinks full-page writes after each checkpoint.
+  wal_level: replica
+  wal_compression: lz4
+  wal_buffers: 64MB
+  min_wal_size: 2GB
+  max_wal_size: 8GB
+  checkpoint_timeout: 15min
+  checkpoint_completion_target: "0.9"
+  # Same demo trade-off as the default profile (see charts/postgres/values.yaml): commits do not wait
+  # for the WAL flush, so a PostgreSQL crash can lose the last ~600 ms of state. wal_writer_delay
+  # bounds that window.
+  synchronous_commit: "off"
+  wal_writer_delay: 200ms
+  # NVMe: random reads cost about the same as sequential ones; deep I/O queues.
+  random_page_cost: "1.1"
+  effective_io_concurrency: "200"
+  maintenance_io_concurrency: "100"
+  io_method: worker
+  io_workers: "4"
+  # Parallelism within the 16 host cores (PostgreSQL shares them with Kafka).
+  max_worker_processes: "16"
+  max_parallel_workers: "8"
+  max_parallel_workers_per_gather: "2"
+  max_parallel_maintenance_workers: "4"
+  # Autovacuum: the services update/insert hot rows all the time (processed events, stock, orders).
+  autovacuum_max_workers: "4"
+  autovacuum_naptime: 15s
+  autovacuum_vacuum_scale_factor: "0.05"
+  autovacuum_vacuum_insert_scale_factor: "0.05"
+  autovacuum_analyze_scale_factor: "0.02"
+  autovacuum_vacuum_cost_limit: "2000"
+  # Safety net against stuck clients holding locks and snapshots.
+  idle_in_transaction_session_timeout: 60s
+  # Observability.
+  log_checkpoints: "on"
+  log_autovacuum_min_duration: 1s
+  log_lock_waits: "on"
+  log_temp_files: 10MB
+  track_io_timing: "on"
+  track_wal_io_timing: "on"

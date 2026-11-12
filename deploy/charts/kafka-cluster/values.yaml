@@ -7,6 +7,9 @@ kafka:
   storage: 10Gi
   defaultReplicationFactor: 3
   minInsyncReplicas: 2
+  cpu: 200m
+  # Extra broker config (server.properties keys), e.g. num.io.threads. Must not repeat chart keys.
+  config: {}
 # Content of the portable bundle's JMX exporter config (set via --set-file by helmfile).
 jmxConfig: ""
 topicDefaults:

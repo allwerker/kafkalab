@@ -1,5 +1,6 @@
 # T105: PostgreSQL 18 + postgres_exporter, per-service roles/schemas, Secret `postgres-credentials`
 # replicated into data/commerce/control.
+{{- $overlay := printf "../values/env/%s/postgres.yaml" .Environment.Name }}
 releases:
   - name: postgres
     namespace: data
@@ -7,3 +8,7 @@ releases:
     chart: ../charts/postgres
     wait: true
     timeout: 600
+{{- if isFile $overlay }}
+    values:
+      - {{ $overlay }}
+{{- end }}

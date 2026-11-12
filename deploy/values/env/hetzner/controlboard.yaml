@@ -1,0 +1,34 @@
+# Controlboard for the Hetzner profile: public URLs behind the reverse proxy
+# (kafkalab.allwerker.space = board, <tool>.kafkalab.allwerker.space = tools).
+memory: 192Mi
+env:
+  GRAFANA_URL: https://grafana.kafkalab.allwerker.space
+  BOARD_URL: https://kafkalab.allwerker.space
+  # The proxy forwards with Host board.localhost; the browser's Origin is the public host.
+  WS_ORIGINS: kafkalab.allwerker.space,board.kafkalab.allwerker.space
+  LINKS_FILE: /etc/lab/links.json
+files:
+  links.json: |
+    [
+      {"id": "grafana", "title": "Grafana", "url": "https://grafana.kafkalab.allwerker.space",
+       "probeUrl": "http://grafana.monitoring:80/api/health",
+       "description": "Dashboards for Kafka, the services and the business", "icon": "layout-dashboard"},
+      {"id": "akhq", "title": "AKHQ", "url": "https://akhq.kafkalab.allwerker.space",
+       "probeUrl": "http://akhq.kafka:28081/health",
+       "description": "Browse topics, messages and consumer groups", "icon": "database"},
+      {"id": "vmui", "title": "VictoriaMetrics", "url": "https://vm.kafkalab.allwerker.space/vmui",
+       "probeUrl": "http://vmsingle-vmks.monitoring:8428/health",
+       "description": "Ad-hoc PromQL / MetricsQL queries", "icon": "chart-line"},
+      {"id": "vmagent", "title": "Scrape targets", "url": "https://vmagent.kafkalab.allwerker.space/targets",
+       "probeUrl": "http://vmagent-vmks.monitoring:8429/health",
+       "description": "What vmagent scrapes and whether it succeeds", "icon": "target"},
+      {"id": "vmalert", "title": "vmalert", "url": "https://vmalert.kafkalab.allwerker.space",
+       "probeUrl": "http://vmalert-vmks.monitoring:8080/health",
+       "description": "Alerting rules and their state", "icon": "siren"},
+      {"id": "alertmanager", "title": "Alertmanager", "url": "https://alertmanager.kafkalab.allwerker.space",
+       "probeUrl": "http://vmalertmanager-vmks.monitoring:9093/-/healthy",
+       "description": "Routing, grouping and silences of alerts", "icon": "bell"},
+      {"id": "logs", "title": "VictoriaLogs", "url": "https://logs.kafkalab.allwerker.space/select/vmui",
+       "probeUrl": "http://victoria-logs.monitoring:9428/health",
+       "description": "Structured logs of every lab service", "icon": "scroll-text"}
+    ]

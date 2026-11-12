@@ -1,0 +1,31 @@
+# Monitoring for the Hetzner profile: longer retention, more headroom, public URLs.
+vmsingle:
+  spec:
+    retentionPeriod: 30d
+    resources:
+      requests: { memory: 1536Mi, cpu: 200m }
+      limits: { memory: 1536Mi }
+    storage:
+      resources:
+        requests:
+          storage: 50Gi
+    extraEnvs:
+      - { name: GOMAXPROCS, value: "4" }
+vmagent:
+  spec:
+    resources:
+      requests: { memory: 384Mi, cpu: 100m }
+      limits: { memory: 384Mi }
+alertmanager:
+  spec:
+    externalURL: https://alertmanager.kafkalab.allwerker.space
+grafana:
+  grafana.ini:
+    server:
+      root_url: https://grafana.kafkalab.allwerker.space
+    security:
+      # The proxy forwards with Host grafana.localhost; the browser's Origin is the public host.
+      csrf_trusted_origins: grafana.kafkalab.allwerker.space
+      allow_embedding: true
+      cookie_samesite: lax
+      cookie_secure: true

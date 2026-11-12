@@ -4,6 +4,7 @@
 repositories:
   - name: vm
     url: https://victoriametrics.github.io/helm-charts/
+{{- $overlay := printf "../values/env/%s/vmks.yaml" .Environment.Name }}
 releases:
   - name: vmks
     namespace: monitoring
@@ -14,3 +15,6 @@ releases:
     timeout: 900
     values:
       - ../values/monitoring/vmks.yaml.gotmpl
+{{- if isFile $overlay }}
+      - {{ $overlay }}
+{{- end }}

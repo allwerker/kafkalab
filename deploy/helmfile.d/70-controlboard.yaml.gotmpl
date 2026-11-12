@@ -6,6 +6,7 @@
 {{- /* chaos-net helper image (make chaos-images); empty disables the broker network scenarios */}}
 {{- $chaosNet := "" }}
 {{- if isFile "../../.tools/chaos-net-tag" }}{{ $chaosNet = readFile "../../.tools/chaos-net-tag" | trim }}{{ end }}
+{{- $overlay := printf "../values/env/%s/controlboard.yaml" .Environment.Name }}
 releases:
   - name: controlboard-rbac
     namespace: control
@@ -30,4 +31,7 @@ releases:
           BROKER_COUNT: {{ .Values.kafka.replicas | quote }}
           CHAOS_NET_IMAGE: {{ $chaosNet | quote }}
       - ../values/services/controlboard.yaml
+{{- if isFile $overlay }}
+      - {{ $overlay }}
+{{- end }}
 {{- end }}

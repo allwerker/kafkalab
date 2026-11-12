@@ -25,7 +25,7 @@ spec:
         deleteClaim: true
         kraftMetadata: shared
   resources:
-    requests: { memory: {{ $k.memory }}, cpu: 200m }
+    requests: { memory: {{ $k.memory }}, cpu: {{ $k.cpu | default "200m" }} }
     limits: { memory: {{ $k.memory }} }
   jvmOptions:
     -Xms: {{ $k.heap }}
@@ -68,6 +68,10 @@ spec:
       log.segment.bytes: 33554432
       log.retention.check.interval.ms: 60000
       message.max.bytes: 2097152
+      {{- /* Extra broker settings per profile (kafka.config). Keys must not repeat the ones above. */}}
+      {{- range $key, $val := $k.config }}
+      {{ $key }}: {{ $val }}
+      {{- end }}
     metricsConfig:
       type: jmxPrometheusExporter
       valueFrom:

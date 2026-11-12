@@ -79,12 +79,16 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 6
           resources:
-            requests: { memory: {{ .Values.memory }}, cpu: 50m }
+            requests: { memory: {{ .Values.memory }}, cpu: {{ .Values.cpu }} }
             limits: { memory: {{ .Values.memory }} }
           volumeMounts:
             # PostgreSQL 18 images keep PGDATA in a versioned subdirectory of /var/lib/postgresql.
             - name: data
               mountPath: /var/lib/postgresql
+            {{- if .Values.shmSize }}
+            - name: shm
+              mountPath: /dev/shm
+            {{- end }}
         - name: exporter
           image: {{ .Values.exporterImage }}
           args:
@@ -107,6 +111,11 @@ spec:
           resources:
             requests: { memory: {{ .Values.exporterMemory }}, cpu: 10m }
             limits: { memory: {{ .Values.exporterMemory }} }
+      {{- if .Values.shmSize }}
+      volumes:
+        - name: shm
+          emptyDir: { medium: Memory, sizeLimit: {{ .Values.shmSize }} }
+      {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: data

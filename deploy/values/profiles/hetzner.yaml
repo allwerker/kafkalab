@@ -1,0 +1,41 @@
+# Hetzner profile: the lab on one dedicated host (sized for a CPX62: 16 vCPU, 32 GB RAM, 640 GB NVMe),
+# public behind a TLS reverse proxy with basic auth (setup lives outside this repo).
+# Everything else of the default profile stays: 3 dual-role Kafka nodes, all extras on.
+#
+# Memory budget (limits) for 32 GB:            Kafka 3 x 3.5 GiB  = 10.5 GiB
+#   PostgreSQL 6 GiB (+1 GiB /dev/shm, tmpfs)   monitoring          ≈  4   GiB
+#   services at the scale cap (6 x 6 replicas)  ≈ 3.5 GiB    Karapace, AKHQ, Strimzi, KMinion ≈ 1.5 GiB
+#   k3s, Docker, OS, reverse proxy              ≈  2   GiB   → ≈ 28 GiB, ~4 GiB headroom + page cache
+# Per-release overrides: values/env/hetzner/<release>.yaml (postgres, vmks, controlboard).
+kafka:
+  replicas: 3
+  # Half heap, half page cache/direct buffers. The broker keeps little on heap; reads of recent
+  # segments come from the page cache, so a bigger heap would only slow down GC.
+  heap: 2g
+  memory: 3584Mi
+  cpu: "1"
+  storage: 60Gi
+  defaultReplicationFactor: 3
+  minInsyncReplicas: 2
+  config:
+    # Request handling: network threads accept/parse, I/O threads append to the log and serve fetches.
+    num.network.threads: 4
+    num.io.threads: 8
+    # Followers fetch with 2 threads per source broker: replication keeps up during Black Friday.
+    num.replica.fetchers: 2
+    socket.send.buffer.bytes: 1048576
+    socket.receive.buffer.bytes: 1048576
+    queued.max.requests: 1000
+    background.threads: 10
+    log.cleaner.threads: 2
+    # Durability comes from replication (acks=all, min.insync.replicas=2), not from fsync.
+    unclean.leader.election.enable: false
+    # Faster recovery after a broker failure scenario.
+    num.recovery.threads.per.data.dir: 4
+extras:
+  logs: true
+  traces: true
+  akhq: true
+services:
+  replicas: 1
+registry: kafka-lab-registry.localhost:5111

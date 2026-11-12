@@ -17,11 +17,20 @@ spec:
   template:
     metadata:
       labels: *labels
+      {{- with .Values.files }}
+      annotations:
+        checksum/files: {{ toYaml . | sha256sum }}
+      {{- end }}
     spec:
       {{- with .Values.serviceAccount }}
       serviceAccountName: {{ . }}
       {{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- if .Values.files }}
+      volumes:
+        - name: files
+          configMap: { name: {{ $name }}-files }
+      {{- end }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -60,10 +69,26 @@ spec:
             httpGet: { path: /readyz, port: http }
             periodSeconds: 5
             failureThreshold: 3
+          {{- if .Values.files }}
+          volumeMounts:
+            - { name: files, mountPath: /etc/lab, readOnly: true }
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: { drop: [ALL] }
+{{- with .Values.files }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-files
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/part-of: kafka-lab
+data:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
 {{- if .Values.service.enabled }}
 ---
 apiVersion: v1

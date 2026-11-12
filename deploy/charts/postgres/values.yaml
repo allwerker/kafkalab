@@ -3,6 +3,9 @@ exporterImage: prometheuscommunity/postgres-exporter:v0.20.1
 database: lab
 storage: 5Gi
 memory: 384Mi
+cpu: 50m
+# Size of /dev/shm (dynamic shared memory for parallel queries). Empty keeps the container default (64 MB).
+shmSize: ""
 exporterMemory: 48Mi
 
 # One role + schema per stateful service (role = schema = name). Passwords land in Secret

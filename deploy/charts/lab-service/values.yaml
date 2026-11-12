@@ -13,6 +13,8 @@ database: true
 tracing: true
 logLevel: info
 env: {}
+# files: name -> content, mounted read-only under /etc/lab (e.g. links.json for LINKS_FILE)
+files: {}
 # serviceAccount / rbac are used by the controlboard only
 serviceAccount: ""
 service:
